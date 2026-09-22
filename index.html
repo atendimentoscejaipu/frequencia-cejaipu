@@ -12,11 +12,12 @@
     <style>
         :root {
             --green-dark: #0b5736;
-            --green-bg: #094a31;
+            --green-bg: #073822;
             --green-light: #15803d;
             --yellow-gold: #ca8a04;
-            --gray-bg: #f3f4f6;
-            --border-color: #d1d5db;
+            --orange-wave: #f97316;
+            --gray-bg: #f8fafc;
+            --border-color: #cbd5e1;
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Georgia', 'Times New Roman', serif; }
@@ -25,13 +26,16 @@
 
         /* TELA DE LOGIN */
         .login-screen { display: flex; justify-content: center; align-items: center; min-height: 100vh; padding: 20px; }
-        .login-card { background: white; padding: 35px 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.4); width: 100%; max-width: 440px; text-align: center; }
+        .login-card { background: white; border-radius: 14px; box-shadow: 0 12px 30px rgba(0,0,0,0.5); width: 100%; max-width: 460px; text-align: center; overflow: hidden; }
         
-        .logo-container { width: 100px; height: 100px; margin: 0 auto 15px; border-radius: 50%; border: 3px solid #15803d; padding: 2px; display: flex; align-items: center; justify-content: center; background: #fff; }
+        .login-banner-header { width: 100%; height: 130px; background: #0b5736 url('CAPA 2.jpg') center/cover no-repeat; position: relative; border-bottom: 4px solid var(--yellow-gold); }
+        
+        .logo-container { width: 90px; height: 90px; margin: -45px auto 12px; border-radius: 50%; border: 4px solid #ffffff; padding: 2px; display: flex; align-items: center; justify-content: center; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.2); position: relative; z-index: 2; }
         .logo-img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }
 
-        .login-card h1 { font-size: 1.25rem; color: var(--green-dark); margin-bottom: 4px; font-weight: bold; }
-        .login-card h2 { font-size: 0.85rem; color: #4b5563; margin-bottom: 22px; font-style: italic; }
+        .login-card-body { padding: 10px 30px 30px; }
+        .login-card h1 { font-size: 1.2rem; color: var(--green-dark); margin-bottom: 4px; font-weight: bold; }
+        .login-card h2 { font-size: 0.82rem; color: #4b5563; margin-bottom: 20px; font-style: italic; }
 
         .form-group { text-align: left; margin-bottom: 16px; }
         .form-group label { display: block; font-size: 0.85rem; font-weight: 600; margin-bottom: 6px; color: #374151; }
@@ -41,21 +45,21 @@
 
         .btn-entrar { width: 100%; padding: 12px; background-color: var(--green-dark); color: white; border: none; border-radius: 6px; font-size: 1rem; font-weight: bold; cursor: pointer; transition: background 0.2s; }
         .btn-entrar:hover { background-color: #084229; }
-        .login-footer { font-size: 0.75rem; color: #6b7280; margin-top: 20px; }
+        .login-footer { font-size: 0.75rem; color: #6b7280; margin-top: 18px; }
 
-        /* PAINEL PRINCIPAL */
-        .app-header { background-color: var(--green-dark); color: white; padding: 12px 25px; display: flex; align-items: center; justify-content: space-between; border-bottom: 2px solid #063822; }
+        /* PAINEL PRINCIPAL COM BARRAS DE CAPA */
+        .app-header-banner { width: 100%; height: 100px; background: #0b5736 url('CAPA 2.jpg') center/cover no-repeat; border-bottom: 4px solid var(--yellow-gold); display: flex; align-items: center; justify-content: space-between; padding: 0 25px; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.6); }
+        
         .app-header-left { display: flex; align-items: center; gap: 15px; }
-        .app-header-logo { width: 55px; height: 55px; background: white; border-radius: 50%; padding: 2px; }
-        .app-header-logo img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }
+        .app-header-logo { width: 65px; height: 65px; background: white; border-radius: 50%; padding: 2px; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
         .app-header-title h1 { font-size: 1.3rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
-        .app-header-title p { font-size: 0.85rem; opacity: 0.9; font-style: italic; }
+        .app-header-title p { font-size: 0.85rem; opacity: 0.95; font-style: italic; }
 
-        .user-status { font-size: 0.82rem; display: flex; align-items: center; gap: 10px; }
-        .btn-sair { background: rgba(255,255,255,0.2); color: white; border: 1px solid rgba(255,255,255,0.4); padding: 4px 12px; border-radius: 15px; cursor: pointer; font-size: 0.8rem; }
-        .btn-sair:hover { background: rgba(255,255,255,0.3); }
+        .user-status { font-size: 0.82rem; display: flex; align-items: center; gap: 10px; background: rgba(0,0,0,0.35); padding: 6px 14px; border-radius: 20px; backdrop-filter: blur(4px); }
+        .btn-sair { background: rgba(255,255,255,0.25); color: white; border: 1px solid rgba(255,255,255,0.5); padding: 4px 12px; border-radius: 15px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
+        .btn-sair:hover { background: rgba(255,255,255,0.4); }
 
-        main.main-container { background-color: #f8fafc; padding: 20px; min-height: calc(100vh - 80px); }
+        main.main-container { background-color: #f8fafc; padding: 20px; min-height: calc(100vh - 100px); }
 
         /* BARRA DE AÇÕES SUPERIOR */
         .action-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
@@ -100,11 +104,14 @@
     <!-- 1. TELA DE LOGIN -->
     <div id="login-screen" class="login-screen">
         <div class="login-card">
+            <!-- Banner de Capa -->
+            <div class="login-banner-header"></div>
+
+            <!-- Recorte do Símbolo Oficial CEJA -->
             <div class="logo-container">
-                <!-- Logotipo CEJA -->
                 <svg viewBox="0 0 100 100" class="logo-img">
                     <circle cx="50" cy="50" r="46" fill="none" stroke="#0b5736" stroke-width="6"/>
-                    <text x="50" y="24" font-size="8" font-weight="bold" fill="#0b5736" text-anchor="middle">CEJA DR. GERARDO CAMELO MADEIRA</text>
+                    <text x="50" y="24" font-size="7.5" font-weight="bold" fill="#0b5736" text-anchor="middle">CEJA DR. GERARDO CAMELO MADEIRA</text>
                     <text x="50" y="88" font-size="8" font-weight="bold" fill="#0b5736" text-anchor="middle">IPU - CE</text>
                     <path d="M 30 62 C 35 45, 45 40, 50 55 C 55 40, 65 45, 70 62" fill="none" stroke="#ca8a04" stroke-width="4"/>
                     <circle cx="38" cy="40" r="4" fill="#0b5736"/>
@@ -112,37 +119,40 @@
                     <circle cx="62" cy="40" r="4" fill="#0b5736"/>
                 </svg>
             </div>
-            <h1>CEJA Dr. Gerardo Camelo Madeira</h1>
-            <h2>Monitoramento de Frequência Diária / Atendimento</h2>
-            
-            <form id="login-form">
-                <div class="form-group">
-                    <label>E-mail institucional</label>
-                    <input type="email" id="loginEmail" required value="atendimentoscejaipu@gmail.com">
-                </div>
-                <div class="form-group">
-                    <label>Senha</label>
-                    <input type="password" id="loginSenha" required placeholder="••••••••">
-                </div>
-                <div class="checkbox-group">
-                    <input type="checkbox" id="keep" checked>
-                    <label for="keep">Manter conectado neste aparelho</label>
-                </div>
-                <button type="submit" class="btn-entrar">Entrar</button>
-            </form>
-            <p class="login-footer">Acesso coletivo e transferível entre os profissionais da escola.</p>
+
+            <div class="login-card-body">
+                <h1>CEJA Dr. Gerardo Camelo Madeira</h1>
+                <h2>Monitoramento de Frequência Diária / Atendimento</h2>
+                
+                <form id="login-form">
+                    <div class="form-group">
+                        <label>E-mail institucional</label>
+                        <input type="email" id="loginEmail" required value="atendimentoscejaipu@gmail.com">
+                    </div>
+                    <div class="form-group">
+                        <label>Senha</label>
+                        <input type="password" id="loginSenha" required placeholder="••••••••">
+                    </div>
+                    <div class="checkbox-group">
+                        <input type="checkbox" id="keep" checked>
+                        <label for="keep">Manter conectado neste aparelho</label>
+                    </div>
+                    <button type="submit" class="btn-entrar">Entrar</button>
+                </form>
+                <p class="login-footer">Acesso coletivo e transferível entre os profissionais da escola.</p>
+            </div>
         </div>
     </div>
 
     <!-- 2. PAINEL PRINCIPAL -->
     <div id="main-app" class="hidden">
-        <!-- Cabeçalho Verde Original -->
-        <header class="app-header">
+        <!-- Cabeçalho com o layout da Imagem de Capa -->
+        <header class="app-header-banner">
             <div class="app-header-left">
                 <div class="app-header-logo">
                     <svg viewBox="0 0 100 100" style="width:100%; height:100%;">
                         <circle cx="50" cy="50" r="46" fill="none" stroke="#0b5736" stroke-width="6"/>
-                        <text x="50" y="24" font-size="8" font-weight="bold" fill="#0b5736" text-anchor="middle">CEJA DR. GERARDO CAMELO MADEIRA</text>
+                        <text x="50" y="24" font-size="7.5" font-weight="bold" fill="#0b5736" text-anchor="middle">CEJA DR. GERARDO CAMELO MADEIRA</text>
                         <text x="50" y="88" font-size="8" font-weight="bold" fill="#0b5736" text-anchor="middle">IPU - CE</text>
                         <path d="M 30 62 C 35 45, 45 40, 50 55 C 55 40, 65 45, 70 62" fill="none" stroke="#ca8a04" stroke-width="4"/>
                         <circle cx="38" cy="40" r="4" fill="#0b5736"/>
@@ -175,14 +185,13 @@
                 <!-- Modo -->
                 <div class="filter-row">
                     <span class="filter-label">Modo</span>
-                    <button class="pill active-gold">FREQUÊNCIA DIÁRIA</button>
-                    <button class="pill">ESTUDANTES</button>
+                    <button class="pill active-gold" id="btnModoFreq" onclick="setModo('FREQUENCIA')">FREQUÊNCIA DIÁRIA</button>
+                    <button class="pill" id="btnModoEst" onclick="setModo('ESTUDANTES')">ESTUDANTES</button>
                 </div>
 
                 <!-- Ano Letivo -->
                 <div class="filter-row" id="anoContainer">
                     <span class="filter-label">Ano letivo</span>
-                    <!-- Gerado via JS (2026 até 2049) -->
                 </div>
 
                 <!-- Área -->
@@ -196,13 +205,11 @@
                 <!-- Mês -->
                 <div class="filter-row" id="mesContainer">
                     <span class="filter-label">Mês</span>
-                    <!-- Gerado via JS -->
                 </div>
 
                 <!-- Dia -->
                 <div class="filter-row" id="diaContainer">
                     <span class="filter-label">Dia</span>
-                    <!-- Gerado via JS (01 até 30) -->
                 </div>
             </div>
 
@@ -210,7 +217,7 @@
             <div class="summary-card">
                 <div class="summary-title" id="summaryTitle">FREQUÊNCIA DIÁRIA: LINGUAGENS — SETEMBRO — DIA 22 — 2026</div>
                 <div class="summary-details">
-                    <span>Alunos atendidos no dia: <strong id="cntAtendidos">0</strong></span>
+                    <span>Alunos atendidos: <strong id="cntAtendidos">0</strong></span>
                     <span>Linhas preenchidas: <strong id="cntPreenchidos">0</strong></span>
                     <span>Área: <strong id="summaryArea">LINGUAGENS</strong></span>
                 </div>
@@ -228,7 +235,7 @@
                             <th style="width:200px;">COMPONENTE CURRICULAR</th>
                             <th style="width:180px;">PROFESSOR(A)</th>
                             <th style="width:180px;">ATENDIMENTO</th>
-                            <th style="width:90px;">FREQUÊNCIA</th>
+                            <th style="width:90px;" id="colFreqHeader">FREQUÊNCIA</th>
                         </tr>
                     </thead>
                     <tbody id="tableBody">
@@ -240,7 +247,7 @@
     </div>
 
     <script>
-        // CONFIGURAÇÃO DO FIREBASE
+        // CONFIGURAÇÃO DO FIREBASE (PROJETO ATENDIMENTOS-CEJA)
         const firebaseConfig = {
             apiKey: "AIzaSyCg7l7axov73nQU1qlIG3NBWw8SWrPFX4",
             authDomain: "atendimentos-ceja.firebaseapp.com",
@@ -255,6 +262,7 @@
         const db = firebase.database();
 
         // ESTADO GLOBAL DA APLICAÇÃO
+        let selModo = "FREQUENCIA";
         let selAno = "2026";
         let selArea = "LINGUAGENS";
         let selMes = "SETEMBRO";
@@ -263,7 +271,7 @@
 
         const MESES = ["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
 
-        // INICIALIZAÇÃO
+        // INICIALIZAÇÃO DA PÁGINA
         window.addEventListener('DOMContentLoaded', () => {
             renderFiltros();
             renderTabelaVazia();
@@ -279,6 +287,33 @@
         function logout() {
             document.getElementById('main-app').classList.add('hidden');
             document.getElementById('login-screen').classList.remove('hidden');
+        }
+
+        // ALTERNAR ENTRE MODO FREQUÊNCIA DIÁRIA E MODO ESTUDANTES
+        function setModo(m) {
+            selModo = m;
+            const btnFreq = document.getElementById('btnModoFreq');
+            const btnEst = document.getElementById('btnModoEst');
+            const mesCont = document.getElementById('mesContainer');
+            const diaCont = document.getElementById('diaContainer');
+            const colFreq = document.getElementById('colFreqHeader');
+
+            if(m === 'FREQUENCIA') {
+                btnFreq.classList.add('active-gold');
+                btnEst.classList.remove('active-gold');
+                mesCont.style.display = 'flex';
+                diaCont.style.display = 'flex';
+                if(colFreq) colFreq.style.display = 'table-cell';
+            } else {
+                btnEst.classList.add('active-gold');
+                btnFreq.classList.remove('active-gold');
+                mesCont.style.display = 'none';
+                diaCont.style.display = 'none';
+                if(colFreq) colFreq.style.display = 'none';
+            }
+
+            atualizarHeader();
+            conectarFirebaseEOuvir();
         }
 
         // RENDERIZAR NAVEGAÇÃO DE FILTROS
@@ -342,11 +377,15 @@
         }
 
         function atualizarHeader() {
-            document.getElementById('summaryTitle').innerText = `FREQUÊNCIA DIÁRIA: ${selArea} — ${selMes} — DIA ${selDia} — ${selAno}`;
+            if(selModo === 'FREQUENCIA') {
+                document.getElementById('summaryTitle').innerText = `FREQUÊNCIA DIÁRIA: ${selArea} — ${selMes} — DIA ${selDia} — ${selAno}`;
+            } else {
+                document.getElementById('summaryTitle').innerText = `CADASTRO DE ESTUDANTES: ${selArea} — ${selAno}`;
+            }
             document.getElementById('summaryArea').innerText = selArea;
         }
 
-        // RENDERIZAR LINHAS DA TABELA (30 LINHAS)
+        // RENDERIZAR TABELA COM 30 LINHAS
         function renderTabelaVazia() {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
@@ -360,16 +399,22 @@
                     <td><input type="text" class="cell-input" id="componente_${i}" onchange="autoSalvar()"></td>
                     <td><input type="text" class="cell-input" id="professor_${i}" onchange="autoSalvar()"></td>
                     <td><input type="text" class="cell-input" id="atendimento_${i}" onchange="autoSalvar()"></td>
-                    <td class="freq-col"><input type="checkbox" class="freq-check" id="freq_${i}" onchange="autoSalvar()"></td>
+                    <td class="freq-col cell-freq"><input type="checkbox" class="freq-check" id="freq_${i}" onchange="autoSalvar()"></td>
                 `;
                 tbody.appendChild(tr);
             }
         }
 
-        // SINCRONIZAÇÃO EM TEMPO REAL COM FIREBASE
+        // CONEXÃO E LEITURA EM TEMPO REAL NO FIREBASE
         function conectarFirebaseEOuvir() {
-            const areaKey = selArea.replace(/[^a-zA-Z0-0]/g, "_");
-            const caminho = `frequencias/${selAno}/${selMes}/${selDia}/${areaKey}`;
+            const areaKey = selArea.replace(/[^a-zA-Z0-9]/g, "_");
+            let caminho = "";
+
+            if(selModo === "FREQUENCIA") {
+                caminho = `frequencias/${selAno}/${selMes}/${selDia}/${areaKey}`;
+            } else {
+                caminho = `estudantes_cadastro/${selAno}/${areaKey}`;
+            }
 
             if(refListener) {
                 refListener.off();
@@ -396,6 +441,7 @@
                 const prof = document.getElementById(`professor_${i}`);
                 const ated = document.getElementById(`atendimento_${i}`);
                 const freq = document.getElementById(`freq_${i}`);
+                const cellFreq = freq ? freq.parentElement : null;
 
                 if(est) est.value = row.estudante || '';
                 if(mat) mat.value = row.mat || '';
@@ -404,6 +450,10 @@
                 if(prof) prof.value = row.professor || '';
                 if(ated) ated.value = row.atendimento || '';
                 if(freq) freq.checked = !!row.frequencia;
+
+                if(cellFreq) {
+                    cellFreq.style.display = (selModo === 'ESTUDANTES') ? 'none' : 'table-cell';
+                }
 
                 if(row.estudante || row.mat) cntPreench++;
                 if(row.frequencia) cntAtend++;
@@ -418,8 +468,14 @@
         }
 
         function salvarFirebase(silencioso = false) {
-            const areaKey = selArea.replace(/[^a-zA-Z0-0]/g, "_");
-            const caminho = `frequencias/${selAno}/${selMes}/${selDia}/${areaKey}`;
+            const areaKey = selArea.replace(/[^a-zA-Z0-9]/g, "_");
+            let caminho = "";
+
+            if(selModo === "FREQUENCIA") {
+                caminho = `frequencias/${selAno}/${selMes}/${selDia}/${areaKey}`;
+            } else {
+                caminho = `estudantes_cadastro/${selAno}/${areaKey}`;
+            }
             
             const payload = {};
             let cntAtend = 0;
@@ -443,10 +499,10 @@
                         componente: comp,
                         professor: prof,
                         atendimento: ated,
-                        frequencia: freq
+                        frequencia: (selModo === "FREQUENCIA") ? freq : false
                     };
                     cntPreench++;
-                    if(freq) cntAtend++;
+                    if(freq && selModo === "FREQUENCIA") cntAtend++;
                 }
             }
 
@@ -455,7 +511,7 @@
                     document.getElementById('cntAtendidos').innerText = cntAtend;
                     document.getElementById('cntPreenchidos').innerText = cntPreench;
                     if(!silencioso) {
-                        alert('Alterações salvas com sucesso no Firebase!');
+                        alert('Alterações salvas com sucesso!');
                     }
                 } else {
                     console.error("Erro ao salvar no Firebase:", error);
@@ -482,7 +538,7 @@
             const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = `frequencia_${selAno}_${selMes}_Dia${selDia}_${selArea}.csv`;
+            link.download = `${selModo}_${selAno}_${selMes}_Dia${selDia}_${selArea}.csv`;
             link.click();
         }
     </script>
