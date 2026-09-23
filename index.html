@@ -59,7 +59,7 @@
         .btn-sair { background: rgba(255,255,255,0.25); color: white; border: 1px solid rgba(255,255,255,0.5); padding: 4px 12px; border-radius: 15px; cursor: pointer; font-size: 0.8rem; font-weight: bold; }
         .btn-sair:hover { background: rgba(255,255,255,0.4); }
 
-        main.main-container { background-color: #f8fafc; padding: 20px; min-height: calc(100vh - 100px); }
+        main.main-container { background-color: #f8fafc; padding: 20px; min-height: calc(100vh - 100px); position: relative; }
 
         /* BARRA DE AÇÕES SUPERIOR */
         .action-bar { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
@@ -100,12 +100,38 @@
 
         .status-emoji { font-size: 1.3rem; line-height: 1; }
         .no-data-msg { padding: 30px; text-align: center; font-size: 0.95rem; color: #475569; font-style: italic; }
+
+        /* CAIXA DE PRÉVIA DE AUTOPREENCHIMENTO FLUTUANTE */
+        .autocomplete-preview-box {
+            position: fixed;
+            z-index: 99999;
+            background: #ffffff;
+            border: 2px solid var(--green-dark);
+            border-radius: 8px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+            max-height: 230px;
+            overflow-y: auto;
+            width: 330px;
+            display: none;
+        }
+        .preview-card-item {
+            padding: 8px 12px;
+            border-bottom: 1px solid #e2e8f0;
+            cursor: pointer;
+            text-align: left;
+            transition: background 0.15s;
+        }
+        .preview-card-item:last-child { border-bottom: none; }
+        .preview-card-item:hover { background-color: #f0fdf4; }
+        .preview-card-title { font-weight: bold; color: var(--green-dark); font-size: 0.88rem; }
+        .preview-card-sub { font-size: 0.76rem; color: #475569; margin-top: 3px; display: flex; gap: 8px; flex-wrap: wrap; }
+        .preview-badge { background: #e2e8f0; padding: 1px 6px; border-radius: 4px; font-weight: 600; color: #334155; }
     </style>
 </head>
 <body>
 
-    <!-- LISTA DE SUGESTÕES / DICAS PARA AUTOPREENCHIMENTO -->
-    <datalist id="dlEstudantes"></datalist>
+    <!-- CAIXA DE PRÉVIA FLUTUANTE -->
+    <div id="autoCompletePreviewBox" class="autocomplete-preview-box"></div>
 
     <!-- SÍMBOLO OFICIAL CEJA -->
     <svg id="cejaOfficialLogoSvg" style="display:none;">
@@ -283,8 +309,8 @@
         let refListener = null;
         let senhaAtendimentoAutorizada = false;
         
-        // BANCO DE DADOS DE DICAS (AUTOPREENCHIMENTO)
-        let mapaAlunosAutoFill = {};
+        // BASE DE DADOS DE ESTUDANTES CADASTRADOS PARA A PRÉVIA
+        let listaAlunosPrevia = [];
 
         const MESES = ["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
 
@@ -296,6 +322,13 @@
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
                 setModo('FREQUENCIA');
+            });
+
+            // Ocultar a caixa de prévia ao clicar fora
+            document.addEventListener('click', (e) => {
+                if(!e.target.classList.contains('cell-input') && !e.target.closest('#autoCompletePreviewBox')) {
+                    esconderPrevia();
+                }
             });
         });
 
@@ -472,7 +505,7 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="ord-col">${i}</td>
-                    <td><input type="text" class="cell-input" id="estudante_${i}" list="dlEstudantes" oninput="testarAutoPreenchimento(${i})" onchange="autoSalvar()"></td>
+                    <td><input type="text" class="cell-input" id="estudante_${i}" onfocus="mostrarPreviaSugestoes(${i})" oninput="mostrarPreviaSugestoes(${i})" onchange="autoSalvar()"></td>
                     <td><input type="text" class="cell-input" id="mat_${i}" onchange="autoSalvar()"></td>
                     <td><input type="text" class="cell-input" id="nivel_${i}" onchange="autoSalvar()"></td>
                     <td><input type="text" class="cell-input" id="componente_${i}" onchange="autoSalvar()"></td>
@@ -484,36 +517,73 @@
             }
         }
 
-        // LÓGICA DE DICAS E PREENCHIMENTO AUTOMÁTICO
-        function testarAutoPreenchimento(i) {
-            const valInput = document.getElementById(`estudante_${i}`).value.trim().toUpperCase();
-            if (!valInput) return;
+        // LÓGICA DE EXIBIÇÃO DA CAIXA DE PRÉVIA
+        function mostrarPreviaSugestoes(idx) {
+            const inputElement = document.getElementById(`estudante_${idx}`);
+            const query = inputElement.value.trim().toUpperCase();
+            const previewBox = document.getElementById('autoCompletePreviewBox');
 
-            const alunoInfo = mapaAlunosAutoFill[valInput];
-            if (alunoInfo) {
-                if (alunoInfo.mat) document.getElementById(`mat_${i}`).value = alunoInfo.mat;
-                if (alunoInfo.nivel) document.getElementById(`nivel_${i}`).value = alunoInfo.nivel;
-                if (alunoInfo.componente) document.getElementById(`componente_${i}`).value = alunoInfo.componente;
-                if (alunoInfo.professor) document.getElementById(`professor_${i}`).value = alunoInfo.professor;
-                autoSalvar();
+            if(listaAlunosPrevia.length === 0) {
+                esconderPrevia();
+                return;
             }
+
+            // Filtra alunos que contêm o texto digitado
+            const resultados = listaAlunosPrevia.filter(aluno => 
+                aluno.estudante.toUpperCase().includes(query) || (aluno.mat && aluno.mat.toUpperCase().includes(query))
+            );
+
+            if(resultados.length === 0) {
+                esconderPrevia();
+                return;
+            }
+
+            // Posiciona a caixa exatamente abaixo do campo de texto
+            const rect = inputElement.getBoundingClientRect();
+            previewBox.style.top = `${rect.bottom + window.scrollY + 2}px`;
+            previewBox.style.left = `${rect.left + window.scrollX}px`;
+            previewBox.style.width = `${Math.max(rect.width, 300)}px`;
+
+            // Monta os cards da prévia
+            previewBox.innerHTML = '';
+            resultados.slice(0, 8).forEach(aluno => {
+                const itemDiv = document.createElement('div');
+                itemDiv.className = 'preview-card-item';
+                itemDiv.innerHTML = `
+                    <div class="preview-card-title">${aluno.estudante}</div>
+                    <div class="preview-card-sub">
+                        <span>Mat: <strong class="preview-badge">${aluno.mat || '-'}</strong></span>
+                        <span>Nível: <strong>${aluno.nivel || '-'}</strong></span>
+                        <span>Comp: <strong>${aluno.componente || '-'}</strong></span>
+                    </div>
+                `;
+                itemDiv.onclick = () => selecionarAlunoPrevia(idx, aluno);
+                previewBox.appendChild(itemDiv);
+            });
+
+            previewBox.style.display = 'block';
         }
 
-        function atualizarDatalistSugestoes() {
-            const dl = document.getElementById('dlEstudantes');
-            dl.innerHTML = '';
-            Object.keys(mapaAlunosAutoFill).forEach(nomeChave => {
-                const obj = mapaAlunosAutoFill[nomeChave];
-                const opt = document.createElement('option');
-                opt.value = obj.estudante;
-                dl.appendChild(opt);
-            });
+        function selecionarAlunoPrevia(idx, aluno) {
+            document.getElementById(`estudante_${idx}`).value = aluno.estudante;
+            if(aluno.mat) document.getElementById(`mat_${idx}`).value = aluno.mat;
+            if(aluno.nivel) document.getElementById(`nivel_${idx}`).value = aluno.nivel;
+            if(aluno.componente) document.getElementById(`componente_${idx}`).value = aluno.componente;
+            if(aluno.professor) document.getElementById(`professor_${idx}`).value = aluno.professor;
+            
+            esconderPrevia();
+            autoSalvar();
+        }
+
+        function esconderPrevia() {
+            const previewBox = document.getElementById('autoCompletePreviewBox');
+            previewBox.style.display = 'none';
         }
 
         function carregarAutoFillDoAno() {
             db.ref(`frequencias/${selAno}`).once('value', (snapshot) => {
                 const dadosAno = snapshot.val() || {};
-                mapaAlunosAutoFill = {};
+                const mapaUnico = {};
 
                 Object.keys(dadosAno).forEach(mes => {
                     const mesDados = dadosAno[mes] || {};
@@ -524,8 +594,8 @@
                             Object.keys(areaDados).forEach(rk => {
                                 const reg = areaDados[rk];
                                 if (reg && reg.estudante && reg.estudante.trim() !== "") {
-                                    const chave = reg.estudante.trim().toUpperCase();
-                                    mapaAlunosAutoFill[chave] = {
+                                    const chave = `${reg.estudante.trim().toUpperCase()}___${reg.mat ? reg.mat.trim().toUpperCase() : ''}`;
+                                    mapaUnico[chave] = {
                                         estudante: reg.estudante,
                                         mat: reg.mat || '',
                                         nivel: reg.nivel || '',
@@ -537,7 +607,8 @@
                         });
                     });
                 });
-                atualizarDatalistSugestoes();
+                
+                listaAlunosPrevia = Object.values(mapaUnico);
             });
         }
 
