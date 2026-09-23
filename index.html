@@ -137,7 +137,7 @@
 
         input[type="checkbox"].freq-check { width: 20px; height: 20px; cursor: pointer; accent-color: var(--green-dark); }
 
-        .status-emoji { font-size: 1.3rem; line-height: 1; }
+        .status-dot { font-size: 1.1rem; line-height: 1; display: inline-block; }
         .no-data-msg { padding: 30px; text-align: center; font-size: 0.95rem; color: #475569; font-style: italic; }
     </style>
 </head>
@@ -774,7 +774,7 @@
 
             listaAlunos.forEach((aluno, idx) => {
                 let diasDecorridos = "-";
-                let statusEmoji = "🔴 😢";
+                let statusBola = "🔴";
                 let statusTitle = "Mais de 60 dias sem frequência";
 
                 if(aluno.ultimaDataObj) {
@@ -782,13 +782,13 @@
                     diasDecorridos = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 
                     if(diasDecorridos <= 30) {
-                        statusEmoji = "🟢 😊";
+                        statusBola = "🟢";
                         statusTitle = "Ativo (Frequência em até 30 dias)";
                     } else if(diasDecorridos >= 31 && diasDecorridos <= 59) {
-                        statusEmoji = "🟡 😟";
+                        statusBola = "🟡";
                         statusTitle = "Atenção (31 a 59 dias sem frequência)";
                     } else {
-                        statusEmoji = "🔴 😢";
+                        statusBola = "🔴";
                         statusTitle = "Alerta (60 dias ou mais sem frequência)";
                     }
                 }
@@ -803,7 +803,7 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="ord-col">${idx + 1}</td>
-                    <td title="${statusTitle}"><span class="status-emoji">${statusEmoji}</span></td>
+                    <td title="${statusTitle}"><span class="status-dot">${statusBola}</span></td>
                     <td class="align-left" style="font-weight:600;">${aluno.nome}</td>
                     <td style="font-weight:bold; color:#0b5736;">${aluno.matricula}</td>
                     ${colunasMeses}
