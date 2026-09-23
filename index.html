@@ -192,19 +192,30 @@
         .summary-title { font-size: 1rem; font-weight: bold; color: var(--green-dark); margin-bottom: 4px; text-transform: uppercase; }
         .summary-details { font-size: 0.85rem; color: #166534; display: flex; gap: 20px; flex-wrap: wrap; }
 
-        /* TABELA DE FREQUÊNCIA E ESTUDANTES */
-        .table-container { background: white; border-radius: 6px; border: 1px solid var(--border-color); overflow-x: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
-        th { background-color: var(--green-dark); color: white; padding: 10px 6px; text-align: center; font-weight: bold; font-size: 0.8rem; border: 1px solid #084229; text-transform: uppercase; white-space: nowrap; }
-        td { padding: 8px 10px; border: 1px solid #e2e8f0; vertical-align: middle; text-align: center; }
+        /* TABELA DE FREQUÊNCIA E ESTUDANTES - OTIMIZADA PARA CELULAR */
+        .table-container { background: white; border-radius: 6px; border: 1px solid var(--border-color); overflow-x: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.05); -webkit-overflow-scrolling: touch; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
+        th { background-color: var(--green-dark); color: white; padding: 10px 8px; text-align: center; font-weight: bold; font-size: 0.82rem; border: 1px solid #084229; text-transform: uppercase; white-space: nowrap; }
+        td { padding: 6px 6px; border: 1px solid #e2e8f0; vertical-align: middle; text-align: center; }
         
-        td.ord-col { font-weight: bold; width: 50px; background: #f8fafc; }
+        td.ord-col { font-weight: bold; width: 45px; background: #f8fafc; }
         td.align-left { text-align: left; }
 
-        input.cell-input { width: 100%; padding: 6px 8px; border: 1px solid transparent; border-radius: 4px; font-size: 0.88rem; outline: none; background: transparent; font-family: 'Georgia', 'Times New Roman', serif; }
+        /* AJUSTE DOS INPUTS DENTRO DA TABELA PARA EVITAR ROLAGEM INDESEJADA */
+        input.cell-input { 
+            width: 100%; 
+            padding: 6px 8px; 
+            border: 1px solid transparent; 
+            border-radius: 4px; 
+            font-size: 0.9rem; 
+            outline: none; 
+            background: transparent; 
+            font-family: 'Georgia', 'Times New Roman', serif;
+            box-sizing: border-box;
+        }
         input.cell-input:focus { border-color: var(--green-dark); background: #ffffff; }
 
-        input[type="checkbox"].freq-check { width: 20px; height: 20px; cursor: pointer; accent-color: var(--green-dark); }
+        input[type="checkbox"].freq-check { width: 22px; height: 22px; cursor: pointer; accent-color: var(--green-dark); }
 
         .status-dot { font-size: 1.1rem; line-height: 1; display: inline-block; }
         .no-data-msg { padding: 30px; text-align: center; font-size: 0.95rem; color: #475569; font-style: italic; }
@@ -389,7 +400,7 @@
             </div>
 
             <div class="summary-card">
-                <div class="summary-title" id="summaryTitle">FREQUÊNCIA DIÁRIA: LINGUAGENS — SETEMBRO — DIA 22 — 2026</div>
+                <div class="summary-title" id="summaryTitle">FREQUÊNCIA DIÁRIA</div>
                 <div class="summary-details">
                     <span>Atendimentos / Alunos: <strong id="cntAtendidos">0</strong></span>
                     <span>Total Registros: <strong id="cntPreenchidos">0</strong></span>
@@ -452,12 +463,16 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // ESTADO GLOBAL
+        // CAPTURA AUTOMÁTICA DA DATA ATUAL DO DISPOSITIVO
+        const hojeAtual = new Date();
+        const MESES = ["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
+
+        // ESTADO GLOBAL INICIALIZADO COM A DATA DE HOJE
         let selModo = "FREQUENCIA";
-        let selAno = "2026";
+        let selAno = String(hojeAtual.getFullYear());
         let selArea = "LINGUAGENS";
-        let selMes = "SETEMBRO";
-        let selDia = "22";
+        let selMes = MESES[hojeAtual.getMonth()];
+        let selDia = String(hojeAtual.getDate()).padStart(2, '0');
         let selSituacaoFiltro = "ATIVO";
         let refListener = null;
         let senhaAtendimentoAutorizada = false;
@@ -470,9 +485,8 @@
             professor: []
         };
 
-        const MESES = ["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
-
         window.addEventListener('DOMContentLoaded', () => {
+            document.getElementById('labelAnoAtual').innerText = selAno;
             renderFiltros();
             
             document.getElementById('login-form').addEventListener('submit', (e) => {
@@ -617,9 +631,10 @@
             }
 
             const mesCont = document.getElementById('mesContainer');
+            mesCont.innerHTML = '<span class="filter-label">Mês</span>';
             MESES.forEach(m => {
                 const btn = document.createElement('button');
-                btn.className = `pill ${m == 'SETEMBRO' ? 'active-outline' : ''}`;
+                btn.className = `pill ${m === selMes ? 'active-outline' : ''}`;
                 btn.innerText = m;
                 btn.onclick = () => {
                     document.querySelectorAll('#mesContainer .pill').forEach(p => p.classList.remove('active-outline'));
@@ -632,10 +647,11 @@
             });
 
             const diaCont = document.getElementById('diaContainer');
-            for(let d = 1; d <= 30; d++) {
+            diaCont.innerHTML = '<span class="filter-label">Dia</span>';
+            for(let d = 1; d <= 31; d++) {
                 const dStr = String(d).padStart(2, '0');
                 const btn = document.createElement('button');
-                btn.className = `pill ${dStr == '22' ? 'active-green' : ''}`;
+                btn.className = `pill ${dStr === selDia ? 'active-green' : ''}`;
                 btn.innerText = dStr;
                 btn.onclick = () => {
                     document.querySelectorAll('#diaContainer .pill').forEach(p => p.classList.remove('active-green'));
@@ -680,50 +696,50 @@
             if(selModo === 'FREQUENCIA') {
                 thead.innerHTML = `
                     <tr>
-                        <th style="width:45px;">ORD.</th>
-                        <th style="width:250px;">ESTUDANTE</th>
-                        <th style="width:90px;">MAT.</th>
-                        <th style="width:80px;">NÍVEL</th>
-                        <th style="width:200px;">COMPONENTE CURRICULAR</th>
-                        <th style="width:180px;">PROFESSOR(A)</th>
-                        <th style="width:180px;">ATENDIMENTO</th>
-                        <th style="width:90px;">FREQUÊNCIA</th>
+                        <th style="min-width:45px;">ORD.</th>
+                        <th style="min-width:260px;">ESTUDANTE</th>
+                        <th style="min-width:110px;">MAT.</th>
+                        <th style="min-width:90px;">NÍVEL</th>
+                        <th style="min-width:220px;">COMPONENTE CURRICULAR</th>
+                        <th style="min-width:200px;">PROFESSOR(A)</th>
+                        <th style="min-width:200px;">ATENDIMENTO</th>
+                        <th style="min-width:90px;">FREQUÊNCIA</th>
                     </tr>
                 `;
                 renderTabelaFreqVazia();
             } else if(selModo === 'ESTUDANTES') {
                 thead.innerHTML = `
                     <tr>
-                        <th style="width:50px;">ORD.</th>
-                        <th style="width:320px;">ESTUDANTE</th>
-                        <th style="width:150px;">NÚMERO DE MATRÍCULA</th>
-                        <th style="width:180px;">ÚLTIMA FREQUÊNCIA</th>
-                        <th>ÚLTIMO COMPONENTE CURRICULAR</th>
+                        <th style="min-width:50px;">ORD.</th>
+                        <th style="min-width:280px;">ESTUDANTE</th>
+                        <th style="min-width:160px;">NÚMERO DE MATRÍCULA</th>
+                        <th style="min-width:160px;">ÚLTIMA FREQUÊNCIA</th>
+                        <th style="min-width:220px;">ÚLTIMO COMPONENTE CURRICULAR</th>
                     </tr>
                 `;
             } else if(selModo === 'SITUACAO') {
                 thead.innerHTML = `
                     <tr>
-                        <th>ORD.</th>
-                        <th>STATUS</th>
-                        <th>ESTUDANTE</th>
-                        <th>NÚMERO DE MATRÍCULA</th>
-                        <th>SITUAÇÃO DA FREQUÊNCIA</th>
-                        <th>ÚLTIMA FREQUÊNCIA</th>
-                        <th>DIAS DECORRIDOS</th>
-                        <th>ÚLTIMA AVALIAÇÃO / COMPONENTE</th>
-                        <th>PROFESSOR(A) DO ÚLTIMO ATENDIMENTO</th>
+                        <th style="min-width:45px;">ORD.</th>
+                        <th style="min-width:60px;">STATUS</th>
+                        <th style="min-width:260px;">ESTUDANTE</th>
+                        <th style="min-width:150px;">NÚMERO DE MATRÍCULA</th>
+                        <th style="min-width:200px;">SITUAÇÃO DA FREQUÊNCIA</th>
+                        <th style="min-width:150px;">ÚLTIMA FREQUÊNCIA</th>
+                        <th style="min-width:140px;">DIAS DECORRIDOS</th>
+                        <th style="min-width:220px;">ÚLTIMA AVALIAÇÃO / COMPONENTE</th>
+                        <th style="min-width:200px;">PROFESSOR(A) DO ÚLTIMO ATENDIMENTO</th>
                     </tr>
                 `;
             } else if(selModo === 'PROFESSORES') {
                 thead.innerHTML = `
                     <tr>
-                        <th>ORD.</th>
-                        <th>PROFESSOR(A)</th>
+                        <th style="min-width:45px;">ORD.</th>
+                        <th style="min-width:240px;">PROFESSOR(A)</th>
                         <th>JAN</th><th>FEV</th><th>MAR</th><th>ABR</th>
                         <th>MAI</th><th>JUN</th><th>JUL</th><th>AGO</th>
                         <th>SET</th><th>OUT</th><th>NOV</th><th>DEZ</th>
-                        <th>TOTAL DE ATENDIMENTOS</th>
+                        <th style="min-width:120px;">TOTAL ATENDIMENTOS</th>
                     </tr>
                 `;
             }
@@ -736,18 +752,23 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="ord-col">${i}</td>
-                    <td><input type="text" class="cell-input" id="estudante_${i}" oninput="handleInlineAutocomplete(event, 'estudante')" onchange="autoSalvar()"></td>
-                    <td><input type="text" class="cell-input" id="mat_${i}" oninput="handleInlineAutocomplete(event, 'mat')" onchange="autoSalvar()"></td>
-                    <td><input type="text" class="cell-input" id="nivel_${i}" oninput="handleInlineAutocomplete(event, 'nivel')" onchange="autoSalvar()"></td>
-                    <td><input type="text" class="cell-input" id="componente_${i}" oninput="handleInlineAutocomplete(event, 'componente')" onchange="autoSalvar()"></td>
-                    <td><input type="text" class="cell-input" id="professor_${i}" oninput="handleInlineAutocomplete(event, 'professor')" onchange="autoSalvar()"></td>
-                    <td><input type="text" class="cell-input" id="atendimento_${i}" onchange="autoSalvar()"></td>
+                    <td><input type="text" class="cell-input" id="estudante_${i}" oninput="handleInlineAutocomplete(event, 'estudante')" onchange="autoSalvar()" onblur="resetInputScroll(this)"></td>
+                    <td><input type="text" class="cell-input" id="mat_${i}" oninput="handleInlineAutocomplete(event, 'mat')" onchange="autoSalvar()" onblur="resetInputScroll(this)"></td>
+                    <td><input type="text" class="cell-input" id="nivel_${i}" oninput="handleInlineAutocomplete(event, 'nivel')" onchange="autoSalvar()" onblur="resetInputScroll(this)"></td>
+                    <td><input type="text" class="cell-input" id="componente_${i}" oninput="handleInlineAutocomplete(event, 'componente')" onchange="autoSalvar()" onblur="resetInputScroll(this)"></td>
+                    <td><input type="text" class="cell-input" id="professor_${i}" oninput="handleInlineAutocomplete(event, 'professor')" onchange="autoSalvar()" onblur="resetInputScroll(this)"></td>
+                    <td><input type="text" class="cell-input" id="atendimento_${i}" onchange="autoSalvar()" onblur="resetInputScroll(this)"></td>
                     <td class="freq-col"><input type="checkbox" class="freq-check" id="freq_${i}" onchange="autoSalvar()"></td>
                 `;
                 tbody.appendChild(tr);
             }
         }
 
+        function resetInputScroll(input) {
+            input.scrollLeft = 0;
+        }
+
+        // AUTOCOMPLETAR SEM ROLAR O CAMPO INDESEJADAMENTE
         function handleInlineAutocomplete(e, fieldName) {
             const input = e.target;
             const typedVal = input.value;
@@ -764,6 +785,11 @@
                 const typedLength = typedVal.length;
                 input.value = fullText;
                 input.setSelectionRange(typedLength, fullText.length);
+                
+                // MANTÉM O INÍCIO DO TEXTO VISÍVEL NO CELULAR
+                requestAnimationFrame(() => {
+                    input.scrollLeft = 0;
+                });
             }
         }
 
@@ -856,12 +882,12 @@
                 const ated = document.getElementById(`atendimento_${i}`);
                 const freq = document.getElementById(`freq_${i}`);
 
-                if(est) est.value = row.estudante || '';
-                if(mat) mat.value = row.mat || '';
-                if(niv) niv.value = row.nivel || '';
-                if(comp) comp.value = row.componente || '';
-                if(prof) prof.value = row.professor || '';
-                if(ated) ated.value = row.atendimento || '';
+                if(est) { est.value = row.estudante || ''; est.scrollLeft = 0; }
+                if(mat) { mat.value = row.mat || ''; mat.scrollLeft = 0; }
+                if(niv) { niv.value = row.nivel || ''; niv.scrollLeft = 0; }
+                if(comp) { comp.value = row.componente || ''; comp.scrollLeft = 0; }
+                if(prof) { prof.value = row.professor || ''; prof.scrollLeft = 0; }
+                if(ated) { ated.value = row.atendimento || ''; ated.scrollLeft = 0; }
                 if(freq) freq.checked = !!row.frequencia;
 
                 if(row.estudante || row.mat) cntPreench++;
