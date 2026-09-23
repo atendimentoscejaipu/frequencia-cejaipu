@@ -748,7 +748,8 @@
         function renderTabelaFreqVazia() {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
-            for(let i = 1; i <= 30; i++) {
+            // ALTERADO PARA 60 ATENDIMENTOS
+            for(let i = 1; i <= 60; i++) {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="ord-col">${i}</td>
@@ -871,7 +872,8 @@
             let cntAtend = 0;
             let cntPreench = 0;
 
-            for(let i = 1; i <= 30; i++) {
+            // ALTERADO PARA 60 ATENDIMENTOS
+            for(let i = 1; i <= 60; i++) {
                 const row = dados[i] || {};
                 
                 const est = document.getElementById(`estudante_${i}`);
@@ -1184,7 +1186,8 @@
             let cntAtend = 0;
             let cntPreench = 0;
 
-            for(let i = 1; i <= 30; i++) {
+            // ALTERADO PARA 60 ATENDIMENTOS
+            for(let i = 1; i <= 60; i++) {
                 const est = document.getElementById(`estudante_${i}`).value;
                 const mat = document.getElementById(`mat_${i}`).value;
                 const niv = document.getElementById(`nivel_${i}`).value;
@@ -1226,7 +1229,8 @@
             let csv = "";
             if(selModo === 'FREQUENCIA') {
                 csv = "ORD.;ESTUDANTE;MAT.;NÍVEL;COMPONENTE CURRICULAR;PROFESSOR(A);ATENDIMENTO;FREQUÊNCIA\n";
-                for(let i = 1; i <= 30; i++) {
+                // ALTERADO PARA 60 ATENDIMENTOS
+                for(let i = 1; i <= 60; i++) {
                     const est = document.getElementById(`estudante_${i}`).value;
                     const mat = document.getElementById(`mat_${i}`).value;
                     const niv = document.getElementById(`nivel_${i}`).value;
