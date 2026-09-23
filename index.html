@@ -2,8 +2,23 @@
 <html lang="pt-BR">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>CEJA Dr. Gerardo Camelo Madeira - Frequência Diária / Atendimento</title>
+
+    <!-- CONFIGURAÇÕES DE PWA (APLICATIVO PARA CELULAR) -->
+    <meta name="theme-color" content="#0b5736">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta name="apple-mobile-web-app-title" content="CEJA Frequência">
+    <meta name="application-name" content="CEJA Frequência">
+
+    <!-- ÍCONE DO APP PARA TELA INICIAL (iOS e ANDROID) -->
+    <link rel="icon" type="image/svg+xml" id="dynamicFavicon">
+    <link rel="apple-touch-icon" id="dynamicAppleIcon">
+
+    <!-- MANIFEST PWA EMBUTIDO -->
+    <link rel="manifest" id="pwaManifest">
     
     <!-- Firebase SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
@@ -21,7 +36,7 @@
         }
 
         * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Georgia', 'Times New Roman', serif; }
-        body { background-color: var(--green-bg); color: #1f2937; min-height: 100vh; }
+        body { background-color: var(--green-bg); color: #1f2937; min-height: 100vh; -webkit-tap-highlight-color: transparent; }
         .hidden { display: none !important; }
 
         /* TELA DE LOGIN */
@@ -175,7 +190,7 @@
         /* RESUMO DA FREQUÊNCIA */
         .summary-card { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px 18px; border-radius: 6px; margin-bottom: 15px; }
         .summary-title { font-size: 1rem; font-weight: bold; color: var(--green-dark); margin-bottom: 4px; text-transform: uppercase; }
-        .summary-details { font-size: 0.85rem; color: #166534; display: flex; gap: 20px; }
+        .summary-details { font-size: 0.85rem; color: #166534; display: flex; gap: 20px; flex-wrap: wrap; }
 
         /* TABELA DE FREQUÊNCIA E ESTUDANTES */
         .table-container { background: white; border-radius: 6px; border: 1px solid var(--border-color); overflow-x: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
@@ -198,7 +213,7 @@
 <body>
 
     <!-- SÍMBOLO OFICIAL CEJA -->
-    <svg id="cejaOfficialLogoSvg" style="display:none;">
+    <svg id="cejaOfficialLogoSvg" style="display:none;" xmlns="http://www.w3.org/2000/svg">
         <g id="cejaSymbolGraphic">
             <defs>
                 <path id="txtTopPath" d="M 28,100 A 72,72 0 1,1 172,100" />
@@ -392,6 +407,37 @@
     </div>
 
     <script>
+        // GERADOR DINÂMICO DE RECURSOS PWA (MANIFEST E ÍCONE DO APP)
+        (function setupPWA() {
+            const svgElement = document.getElementById('cejaOfficialLogoSvg');
+            const svgString = new XMLSerializer().serializeToString(svgElement);
+            const svgDataUri = 'data:image/svg+xml;base64,' + btoa(unescape(encodeURIComponent(svgString)));
+
+            document.getElementById('dynamicFavicon').href = svgDataUri;
+            document.getElementById('dynamicAppleIcon').href = svgDataUri;
+
+            const manifestData = {
+                name: "CEJA Dr. Gerardo Camelo Madeira",
+                short_name: "CEJA Atendimento",
+                description: "Sistema de Monitoramento de Frequência Diária e Atendimentos do CEJA",
+                start_url: "./",
+                display: "standalone",
+                background_color: "#073822",
+                theme_color: "#0b5736",
+                icons: [
+                    {
+                        src: svgDataUri,
+                        sizes: "512x512",
+                        type: "image/svg+xml",
+                        purpose: "any maskable"
+                    }
+                ]
+            };
+
+            const manifestBlob = new Blob([JSON.stringify(manifestData)], { type: 'application/json' });
+            document.getElementById('pwaManifest').href = URL.createObjectURL(manifestBlob);
+        })();
+
         // CONFIGURAÇÃO DO FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyCg7l7axov73nQU1qlIG3NBWw8SWrPFX4",
@@ -489,7 +535,7 @@
                 btnEst.classList.add('active-gold');
                 mesCont.style.display = 'none';
                 diaCont.style.display = 'none';
-                areaCont.style.display = 'none'; // REMOVIDA A SELEÇÃO DE ÁREAS NA ABA DO ESTUDANTE
+                areaCont.style.display = 'none';
                 btnSalvar.style.display = 'none';
             } else if(m === 'SITUACAO') {
                 btnSit.classList.add('active-gold');
@@ -646,7 +692,6 @@
                 `;
                 renderTabelaFreqVazia();
             } else if(selModo === 'ESTUDANTES') {
-                // ESTRUTURA REFEITA: APENAS LISTA DE ALUNOS COM ÚLTIMA FREQUÊNCIA E ÚLTIMO COMPONENTE
                 thead.innerHTML = `
                     <tr>
                         <th style="width:50px;">ORD.</th>
@@ -827,14 +872,12 @@
             document.getElementById('cntPreenchidos').innerText = cntPreench;
         }
 
-        /* ABA DO ESTUDANTE REFEITA: LISTA CONSOLIDADA DE TODOS OS ALUNOS SEM FILTRO DE ÁREA */
         function processarEExibirRelatorioEstudantes(dadosAno) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
 
             const mapaEstudantes = {};
 
-            // Mapeia todas as áreas do conhecimento para consolidação geral
             Object.keys(dadosAno).forEach(mesNome => {
                 const mesIndex = MESES.indexOf(mesNome);
                 if(mesIndex === -1) return;
@@ -864,7 +907,6 @@
                                 };
                             }
 
-                            // Registra apenas a data da última FREQUÊNCIA marcada
                             if(reg.frequencia) {
                                 const dataCorr = new Date(parseInt(selAno), mesIndex, parseInt(diaNome));
                                 if(!mapaEstudantes[chaveAluno].ultimaDataObj || dataCorr >= mapaEstudantes[chaveAluno].ultimaDataObj) {
@@ -881,8 +923,6 @@
             });
 
             const listaAlunos = Object.values(mapaEstudantes);
-
-            // Ordena os alunos em ordem alfabética pelo nome
             listaAlunos.sort((a, b) => a.nome.localeCompare(b.nome));
 
             if(listaAlunos.length === 0) {
