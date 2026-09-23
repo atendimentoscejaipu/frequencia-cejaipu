@@ -47,7 +47,7 @@
         .btn-entrar:hover { background-color: #084229; }
         .login-footer { font-size: 0.75rem; color: #6b7280; margin-top: 18px; }
 
-        /* PAINEL PRINCIPAL COM BARRAS DE CAPA */
+        /* PAINEL PRINCIPAL */
         .app-header-banner { width: 100%; height: 100px; background: #0b5736 url('CAPA 2.jpg') center/cover no-repeat; border-bottom: 4px solid var(--yellow-gold); display: flex; align-items: center; justify-content: space-between; padding: 0 25px; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.6); }
         
         .app-header-left { display: flex; align-items: center; gap: 15px; }
@@ -67,7 +67,7 @@
         .btn-action.primary { background-color: var(--green-dark); color: white; border-color: var(--green-dark); }
         .status-badge { margin-left: auto; font-size: 0.85rem; color: #047857; background: #d1fae5; padding: 6px 14px; border-radius: 20px; font-weight: 600; border: 1px solid #a7f3d0; }
 
-        /* NAVEGAÇÃO / FILTROS EM PILULAS */
+        /* FILTROS */
         .filter-section { background: #f1f5f9; padding: 15px; border-radius: 8px; border: 1px solid #e2e8f0; margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px; }
         .filter-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
         .filter-label { font-size: 0.82rem; font-weight: bold; color: #475569; min-width: 80px; text-transform: uppercase; }
@@ -93,45 +93,16 @@
         td.ord-col { font-weight: bold; width: 40px; background: #f8fafc; }
         td.align-left { text-align: left; }
 
-        input.cell-input { width: 100%; padding: 6px 8px; border: 1px solid transparent; border-radius: 4px; font-size: 0.88rem; outline: none; background: transparent; }
+        input.cell-input { width: 100%; padding: 6px 8px; border: 1px solid transparent; border-radius: 4px; font-size: 0.88rem; outline: none; background: transparent; font-family: 'Georgia', 'Times New Roman', serif; }
         input.cell-input:focus { border-color: var(--green-dark); background: #ffffff; }
 
         input[type="checkbox"].freq-check { width: 20px; height: 20px; cursor: pointer; accent-color: var(--green-dark); }
 
         .status-emoji { font-size: 1.3rem; line-height: 1; }
         .no-data-msg { padding: 30px; text-align: center; font-size: 0.95rem; color: #475569; font-style: italic; }
-
-        /* CAIXA DE PRÉVIA DE AUTOPREENCHIMENTO FLUTUANTE */
-        .autocomplete-preview-box {
-            position: fixed;
-            z-index: 99999;
-            background: #ffffff;
-            border: 2px solid var(--green-dark);
-            border-radius: 8px;
-            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
-            max-height: 230px;
-            overflow-y: auto;
-            width: 330px;
-            display: none;
-        }
-        .preview-card-item {
-            padding: 8px 12px;
-            border-bottom: 1px solid #e2e8f0;
-            cursor: pointer;
-            text-align: left;
-            transition: background 0.15s;
-        }
-        .preview-card-item:last-child { border-bottom: none; }
-        .preview-card-item:hover { background-color: #f0fdf4; }
-        .preview-card-title { font-weight: bold; color: var(--green-dark); font-size: 0.88rem; }
-        .preview-card-sub { font-size: 0.76rem; color: #475569; margin-top: 3px; display: flex; gap: 8px; flex-wrap: wrap; }
-        .preview-badge { background: #e2e8f0; padding: 1px 6px; border-radius: 4px; font-weight: 600; color: #334155; }
     </style>
 </head>
 <body>
-
-    <!-- CAIXA DE PRÉVIA FLUTUANTE -->
-    <div id="autoCompletePreviewBox" class="autocomplete-preview-box"></div>
 
     <!-- SÍMBOLO OFICIAL CEJA -->
     <svg id="cejaOfficialLogoSvg" style="display:none;">
@@ -286,7 +257,7 @@
     </div>
 
     <script>
-        // CONFIGURAÇÃO DO FIREBASE (PROJETO ATENDIMENTOS-CEJA)
+        // CONFIGURAÇÃO DO FIREBASE
         const firebaseConfig = {
             apiKey: "AIzaSyCg7l7axov73nQU1qlIG3NBWw8SWrPFX4",
             authDomain: "atendimentos-ceja.firebaseapp.com",
@@ -300,7 +271,7 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
 
-        // ESTADO GLOBAL DA APLICAÇÃO
+        // ESTADO GLOBAL
         let selModo = "FREQUENCIA";
         let selAno = "2026";
         let selArea = "LINGUAGENS";
@@ -309,8 +280,7 @@
         let refListener = null;
         let senhaAtendimentoAutorizada = false;
         
-        // BASE DE DADOS DE ESTUDANTES CADASTRADOS PARA A PRÉVIA
-        let listaAlunosPrevia = [];
+        let listaAlunosSugestao = [];
 
         const MESES = ["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
 
@@ -322,13 +292,6 @@
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
                 setModo('FREQUENCIA');
-            });
-
-            // Ocultar a caixa de prévia ao clicar fora
-            document.addEventListener('click', (e) => {
-                if(!e.target.classList.contains('cell-input') && !e.target.closest('#autoCompletePreviewBox')) {
-                    esconderPrevia();
-                }
             });
         });
 
@@ -457,7 +420,7 @@
                 thead.innerHTML = `
                     <tr>
                         <th style="width:45px;">ORD.</th>
-                        <th style="width:220px;">ESTUDANTE</th>
+                        <th style="width:250px;">ESTUDANTE</th>
                         <th style="width:90px;">MAT.</th>
                         <th style="width:80px;">NÍVEL</th>
                         <th style="width:200px;">COMPONENTE CURRICULAR</th>
@@ -505,7 +468,7 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="ord-col">${i}</td>
-                    <td><input type="text" class="cell-input" id="estudante_${i}" onfocus="mostrarPreviaSugestoes(${i})" oninput="mostrarPreviaSugestoes(${i})" onchange="autoSalvar()"></td>
+                    <td><input type="text" class="cell-input" id="estudante_${i}" oninput="handleEstudanteInput(event, ${i})" onchange="autoSalvar()"></td>
                     <td><input type="text" class="cell-input" id="mat_${i}" onchange="autoSalvar()"></td>
                     <td><input type="text" class="cell-input" id="nivel_${i}" onchange="autoSalvar()"></td>
                     <td><input type="text" class="cell-input" id="componente_${i}" onchange="autoSalvar()"></td>
@@ -517,70 +480,42 @@
             }
         }
 
-        // LÓGICA DE EXIBIÇÃO DA CAIXA DE PRÉVIA
-        function mostrarPreviaSugestoes(idx) {
-            const inputElement = document.getElementById(`estudante_${idx}`);
-            const query = inputElement.value.trim().toUpperCase();
-            const previewBox = document.getElementById('autoCompletePreviewBox');
+        // AUTOCOMPLETAR INLINE DIRETAMENTE NA CÉLULA (IGUAL À SUA IMAGEM)
+        function handleEstudanteInput(e, idx) {
+            const input = e.target;
+            const typedVal = input.value;
 
-            if(listaAlunosPrevia.length === 0) {
-                esconderPrevia();
+            // Se o usuário estiver apagando com Backspace/Delete, não sugere
+            if (e.inputType && e.inputType.startsWith('delete')) {
                 return;
             }
 
-            // Filtra alunos que contêm o texto digitado
-            const resultados = listaAlunosPrevia.filter(aluno => 
-                aluno.estudante.toUpperCase().includes(query) || (aluno.mat && aluno.mat.toUpperCase().includes(query))
-            );
+            if (!typedVal || typedVal.trim() === '') return;
 
-            if(resultados.length === 0) {
-                esconderPrevia();
-                return;
+            const query = typedVal.toUpperCase();
+
+            // Busca aluno na base cujo nome comece com o texto digitado
+            const match = listaAlunosSugestao.find(a => a.estudante.toUpperCase().startsWith(query));
+
+            if (match) {
+                const fullText = match.estudante;
+                const typedLength = typedVal.length;
+
+                // Define o valor completo na célula
+                input.value = fullText;
+
+                // Seleciona/Destaca em azul apenas a parte sugerida (igual à foto)
+                input.setSelectionRange(typedLength, fullText.length);
+
+                // Preenche os dados correspondentes nas outras células da mesma linha
+                if (match.mat) document.getElementById(`mat_${idx}`).value = match.mat;
+                if (match.nivel) document.getElementById(`nivel_${idx}`).value = match.nivel;
+                if (match.componente) document.getElementById(`componente_${idx}`).value = match.componente;
+                if (match.professor) document.getElementById(`professor_${idx}`).value = match.professor;
             }
-
-            // Posiciona a caixa exatamente abaixo do campo de texto
-            const rect = inputElement.getBoundingClientRect();
-            previewBox.style.top = `${rect.bottom + window.scrollY + 2}px`;
-            previewBox.style.left = `${rect.left + window.scrollX}px`;
-            previewBox.style.width = `${Math.max(rect.width, 300)}px`;
-
-            // Monta os cards da prévia
-            previewBox.innerHTML = '';
-            resultados.slice(0, 8).forEach(aluno => {
-                const itemDiv = document.createElement('div');
-                itemDiv.className = 'preview-card-item';
-                itemDiv.innerHTML = `
-                    <div class="preview-card-title">${aluno.estudante}</div>
-                    <div class="preview-card-sub">
-                        <span>Mat: <strong class="preview-badge">${aluno.mat || '-'}</strong></span>
-                        <span>Nível: <strong>${aluno.nivel || '-'}</strong></span>
-                        <span>Comp: <strong>${aluno.componente || '-'}</strong></span>
-                    </div>
-                `;
-                itemDiv.onclick = () => selecionarAlunoPrevia(idx, aluno);
-                previewBox.appendChild(itemDiv);
-            });
-
-            previewBox.style.display = 'block';
         }
 
-        function selecionarAlunoPrevia(idx, aluno) {
-            document.getElementById(`estudante_${idx}`).value = aluno.estudante;
-            if(aluno.mat) document.getElementById(`mat_${idx}`).value = aluno.mat;
-            if(aluno.nivel) document.getElementById(`nivel_${idx}`).value = aluno.nivel;
-            if(aluno.componente) document.getElementById(`componente_${idx}`).value = aluno.componente;
-            if(aluno.professor) document.getElementById(`professor_${idx}`).value = aluno.professor;
-            
-            esconderPrevia();
-            autoSalvar();
-        }
-
-        function esconderPrevia() {
-            const previewBox = document.getElementById('autoCompletePreviewBox');
-            previewBox.style.display = 'none';
-        }
-
-        function carregarAutoFillDoAno() {
+        function carregarBaseAlunosSugestao() {
             db.ref(`frequencias/${selAno}`).once('value', (snapshot) => {
                 const dadosAno = snapshot.val() || {};
                 const mapaUnico = {};
@@ -608,14 +543,14 @@
                     });
                 });
                 
-                listaAlunosPrevia = Object.values(mapaUnico);
+                listaAlunosSugestao = Object.values(mapaUnico);
             });
         }
 
         function conectarFirebaseEOuvir() {
             const areaKey = selArea.replace(/[^a-zA-Z0-9]/g, "_");
 
-            carregarAutoFillDoAno();
+            carregarBaseAlunosSugestao();
 
             if(refListener) {
                 refListener.off();
