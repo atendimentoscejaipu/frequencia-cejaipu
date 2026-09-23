@@ -79,7 +79,7 @@
         .pill.active-green { background-color: var(--green-dark); color: white; border-color: var(--green-dark); }
         .pill.active-outline { background-color: white; color: var(--green-dark); border: 2px solid var(--green-dark); font-weight: bold; }
 
-        /* PAINEL DE BOTÕES DE SITUAÇÃO DO ESTUDANTE (BOLAS CLICÁVEIS) */
+        /* PAINEL DE BOTÕES DE SITUAÇÃO DO ESTUDANTE */
         .situacao-cards-container {
             display: flex;
             gap: 15px;
@@ -128,37 +128,12 @@
             box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
         }
 
-        .situacao-circle {
-            font-size: 2rem;
-            line-height: 1;
-            margin-bottom: 6px;
-        }
+        .situacao-circle { font-size: 2rem; line-height: 1; margin-bottom: 6px; }
+        .situacao-name { font-size: 0.9rem; font-weight: bold; color: #1e293b; letter-spacing: 0.5px; }
+        .situacao-subtext { font-size: 0.72rem; color: #64748b; margin-top: 2px; font-style: italic; }
+        .situacao-badge { margin-top: 6px; background: #e2e8f0; color: #334155; padding: 2px 10px; border-radius: 12px; font-size: 0.78rem; font-weight: bold; }
 
-        .situacao-name {
-            font-size: 0.9rem;
-            font-weight: bold;
-            color: #1e293b;
-            letter-spacing: 0.5px;
-        }
-
-        .situacao-subtext {
-            font-size: 0.72rem;
-            color: #64748b;
-            margin-top: 2px;
-            font-style: italic;
-        }
-
-        .situacao-badge {
-            margin-top: 6px;
-            background: #e2e8f0;
-            color: #334155;
-            padding: 2px 10px;
-            border-radius: 12px;
-            font-size: 0.78rem;
-            font-weight: bold;
-        }
-
-        /* CAIXA FLUTUANTE DE ANO COM BALÃO E SETAS */
+        /* CAIXA FLUTUANTE DE ANO */
         .year-selector-wrapper { position: relative; display: inline-flex; align-items: center; gap: 6px; }
         .pill-nav { padding: 5px 10px; border-radius: 20px; background: white; border: 1px solid var(--border-color); font-size: 0.82rem; cursor: pointer; color: #334155; font-weight: bold; transition: all 0.15s; }
         .pill-nav:hover { background: #e2e8f0; color: var(--green-dark); }
@@ -206,9 +181,9 @@
         .table-container { background: white; border-radius: 6px; border: 1px solid var(--border-color); overflow-x: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
         table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
         th { background-color: var(--green-dark); color: white; padding: 10px 6px; text-align: center; font-weight: bold; font-size: 0.8rem; border: 1px solid #084229; text-transform: uppercase; white-space: nowrap; }
-        td { padding: 6px 6px; border: 1px solid #e2e8f0; vertical-align: middle; text-align: center; }
+        td { padding: 8px 10px; border: 1px solid #e2e8f0; vertical-align: middle; text-align: center; }
         
-        td.ord-col { font-weight: bold; width: 40px; background: #f8fafc; }
+        td.ord-col { font-weight: bold; width: 50px; background: #f8fafc; }
         td.align-left { text-align: left; }
 
         input.cell-input { width: 100%; padding: 6px 8px; border: 1px solid transparent; border-radius: 4px; font-size: 0.88rem; outline: none; background: transparent; font-family: 'Georgia', 'Times New Roman', serif; }
@@ -335,7 +310,7 @@
                     <button class="pill" id="btnModoProf" onclick="setModo('PROFESSORES')">ATENDIMENTO MENSAL</button>
                 </div>
 
-                <!-- CARTOES DE FILTRO DA SITUAÇÃO DO ESTUDANTE (🟢, 🟡, 🔴) -->
+                <!-- CARTOES DE FILTRO DA SITUAÇÃO DO ESTUDANTE -->
                 <div id="situacaoCardsContainer" class="situacao-cards-container hidden">
                     <div class="situacao-card selected-ativo" id="cardAtivo" onclick="setFiltroSituacao('ATIVO')">
                         <span class="situacao-circle">🟢</span>
@@ -359,7 +334,7 @@
                     </div>
                 </div>
 
-                <!-- SELETOR DE ANO EM CAIXA FLUTUANTE COM BALÃO E SETAS -->
+                <!-- SELETOR DE ANO LETIVO -->
                 <div class="filter-row" id="anoContainer">
                     <span class="filter-label">Ano letivo</span>
                     <div class="year-selector-wrapper">
@@ -372,7 +347,6 @@
 
                         <button class="pill-nav" onclick="alterarAno(1)" title="Próximo Ano">►</button>
 
-                        <!-- Balão Flutuante (Popover) -->
                         <div id="yearPopover" class="year-popover hidden" onclick="event.stopPropagation()">
                             <div class="popover-arrow"></div>
                             <div class="popover-header">Selecionar Ano Letivo</div>
@@ -403,7 +377,7 @@
                 <div class="summary-title" id="summaryTitle">FREQUÊNCIA DIÁRIA: LINGUAGENS — SETEMBRO — DIA 22 — 2026</div>
                 <div class="summary-details">
                     <span>Atendimentos / Alunos: <strong id="cntAtendidos">0</strong></span>
-                    <span>Linhas preenchidas: <strong id="cntPreenchidos">0</strong></span>
+                    <span>Total Registros: <strong id="cntPreenchidos">0</strong></span>
                     <span>Área: <strong id="summaryArea">LINGUAGENS</strong></span>
                 </div>
             </div>
@@ -438,7 +412,7 @@
         let selArea = "LINGUAGENS";
         let selMes = "SETEMBRO";
         let selDia = "22";
-        let selSituacaoFiltro = "ATIVO"; // 'ATIVO', 'PRE_EVADIDO', 'EVADIDO'
+        let selSituacaoFiltro = "ATIVO";
         let refListener = null;
         let senhaAtendimentoAutorizada = false;
         
@@ -462,7 +436,6 @@
                 setModo('FREQUENCIA');
             });
 
-            // Fecha o balão de ano ao clicar fora
             document.addEventListener('click', (e) => {
                 const popover = document.getElementById('yearPopover');
                 const trigger = document.getElementById('btnAnoSelect');
@@ -495,6 +468,7 @@
             const btnProf = document.getElementById('btnModoProf');
             const mesCont = document.getElementById('mesContainer');
             const diaCont = document.getElementById('diaContainer');
+            const areaCont = document.getElementById('areaContainer');
             const sitCards = document.getElementById('situacaoCardsContainer');
             const btnSalvar = document.getElementById('btnSalvar');
 
@@ -509,22 +483,26 @@
                 btnFreq.classList.add('active-gold');
                 mesCont.style.display = 'flex';
                 diaCont.style.display = 'flex';
+                areaCont.style.display = 'flex';
                 btnSalvar.style.display = 'inline-block';
             } else if(m === 'ESTUDANTES') {
                 btnEst.classList.add('active-gold');
                 mesCont.style.display = 'none';
                 diaCont.style.display = 'none';
+                areaCont.style.display = 'none'; // REMOVIDA A SELEÇÃO DE ÁREAS NA ABA DO ESTUDANTE
                 btnSalvar.style.display = 'none';
             } else if(m === 'SITUACAO') {
                 btnSit.classList.add('active-gold');
                 mesCont.style.display = 'none';
                 diaCont.style.display = 'none';
+                areaCont.style.display = 'flex';
                 btnSalvar.style.display = 'none';
                 sitCards.classList.remove('hidden');
             } else if(m === 'PROFESSORES') {
                 btnProf.classList.add('active-gold');
                 mesCont.style.display = 'none';
                 diaCont.style.display = 'none';
+                areaCont.style.display = 'flex';
                 btnSalvar.style.display = 'none';
             }
 
@@ -551,7 +529,6 @@
             conectarFirebaseEOuvir();
         }
 
-        /* LÓGICA DO SELETOR DE ANO COM BALÃO FLUTUANTE */
         function toggleYearPopover(e) {
             e.stopPropagation();
             const popover = document.getElementById('yearPopover');
@@ -636,15 +613,18 @@
         function atualizarHeader() {
             if(selModo === 'FREQUENCIA') {
                 document.getElementById('summaryTitle').innerText = `FREQUÊNCIA DIÁRIA: ${selArea} — ${selMes} — DIA ${selDia} — ${selAno}`;
+                document.getElementById('summaryArea').innerText = selArea;
             } else if(selModo === 'ESTUDANTES') {
-                document.getElementById('summaryTitle').innerText = `RELATÓRIO CONSOLIDADO DE ESTUDANTES: ${selArea} — ${selAno}`;
+                document.getElementById('summaryTitle').innerText = `LISTA GERAL DE ESTUDANTES — ${selAno}`;
+                document.getElementById('summaryArea').innerText = "TODAS AS ÁREAS";
             } else if(selModo === 'SITUACAO') {
                 let rotulo = selSituacaoFiltro === 'ATIVO' ? 'ATIVOS (🟢)' : (selSituacaoFiltro === 'PRE_EVADIDO' ? 'PRÉ-EVADIDOS (🟡)' : 'EVADIDOS (🔴)');
                 document.getElementById('summaryTitle').innerText = `SITUAÇÃO DO ESTUDANTE [${rotulo}]: ${selArea} — ${selAno}`;
+                document.getElementById('summaryArea').innerText = selArea;
             } else {
                 document.getElementById('summaryTitle').innerText = `RELATÓRIO DE ATENDIMENTO MENSAL POR PROFESSOR: ${selArea} — ${selAno}`;
+                document.getElementById('summaryArea').innerText = selArea;
             }
-            document.getElementById('summaryArea').innerText = selArea;
         }
 
         function renderEstruturaTabela() {
@@ -666,20 +646,14 @@
                 `;
                 renderTabelaFreqVazia();
             } else if(selModo === 'ESTUDANTES') {
+                // ESTRUTURA REFEITA: APENAS LISTA DE ALUNOS COM ÚLTIMA FREQUÊNCIA E ÚLTIMO COMPONENTE
                 thead.innerHTML = `
                     <tr>
-                        <th>ORD.</th>
-                        <th>STATUS</th>
-                        <th>ESTUDANTE</th>
-                        <th>NÚMERO DE MATRÍCULA</th>
-                        <th>JAN</th><th>FEV</th><th>MAR</th><th>ABR</th>
-                        <th>MAI</th><th>JUN</th><th>JUL</th><th>AGO</th>
-                        <th>SET</th><th>OUT</th><th>NOV</th><th>DEZ</th>
-                        <th>TOTAL</th>
-                        <th>ÚLTIMA AVALIAÇÃO REALIZADA</th>
-                        <th>ÚLTIMA FREQUÊNCIA</th>
-                        <th>DIAS DECORRIDOS</th>
-                        <th>PROFESSOR(A) DO ÚLTIMO ATENDIMENTO</th>
+                        <th style="width:50px;">ORD.</th>
+                        <th style="width:320px;">ESTUDANTE</th>
+                        <th style="width:150px;">NÚMERO DE MATRÍCULA</th>
+                        <th style="width:180px;">ÚLTIMA FREQUÊNCIA</th>
+                        <th>ÚLTIMO COMPONENTE CURRICULAR</th>
                     </tr>
                 `;
             } else if(selModo === 'SITUACAO') {
@@ -812,7 +786,7 @@
                 refListener.on('value', (snapshot) => {
                     const dadosAno = snapshot.val() || {};
                     if(selModo === 'ESTUDANTES') {
-                        processarEExibirRelatorioEstudantes(dadosAno, areaKey);
+                        processarEExibirRelatorioEstudantes(dadosAno);
                     } else if(selModo === 'SITUACAO') {
                         processarEExibirRelatorioSituacao(dadosAno, areaKey);
                     } else if(selModo === 'PROFESSORES') {
@@ -853,12 +827,14 @@
             document.getElementById('cntPreenchidos').innerText = cntPreench;
         }
 
-        function processarEExibirRelatorioEstudantes(dadosAno, areaKey) {
+        /* ABA DO ESTUDANTE REFEITA: LISTA CONSOLIDADA DE TODOS OS ALUNOS SEM FILTRO DE ÁREA */
+        function processarEExibirRelatorioEstudantes(dadosAno) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
 
             const mapaEstudantes = {};
 
+            // Mapeia todas as áreas do conhecimento para consolidação geral
             Object.keys(dadosAno).forEach(mesNome => {
                 const mesIndex = MESES.indexOf(mesNome);
                 if(mesIndex === -1) return;
@@ -866,112 +842,72 @@
                 const mesDados = dadosAno[mesNome] || {};
                 Object.keys(mesDados).forEach(diaNome => {
                     const diaDados = mesDados[diaNome] || {};
-                    const areaDados = diaDados[areaKey] || {};
 
-                    Object.keys(areaDados).forEach(rowKey => {
-                        const reg = areaDados[rowKey];
-                        if(!reg || !reg.estudante || reg.estudante.trim() === "") return;
+                    Object.keys(diaDados).forEach(areaKey => {
+                        const areaDados = diaDados[areaKey] || {};
 
-                        const nomeNorm = reg.estudante.trim().toUpperCase();
-                        const matNorm = reg.mat ? reg.mat.trim().toUpperCase() : "SEM_MAT";
+                        Object.keys(areaDados).forEach(rowKey => {
+                            const reg = areaDados[rowKey];
+                            if(!reg || !reg.estudante || reg.estudante.trim() === "") return;
 
-                        const chaveAluno = `${nomeNorm}___${matNorm}`;
+                            const nomeNorm = reg.estudante.trim().toUpperCase();
+                            const matNorm = reg.mat ? reg.mat.trim().toUpperCase() : "SEM_MAT";
+                            const chaveAluno = `${nomeNorm}___${matNorm}`;
 
-                        if(!mapaEstudantes[chaveAluno]) {
-                            mapaEstudantes[chaveAluno] = {
-                                nome: reg.estudante,
-                                matricula: reg.mat && reg.mat.trim() !== "" ? reg.mat : "-",
-                                meses: Array(12).fill(0),
-                                total: 0,
-                                ultimaDataObj: null,
-                                ultimaDataStr: '-',
-                                ultimaAvaliacao: '-',
-                                ultimoProfessor: '-'
-                            };
-                        }
-
-                        if(reg.frequencia) {
-                            mapaEstudantes[chaveAluno].meses[mesIndex]++;
-                            mapaEstudantes[chaveAluno].total++;
-                        }
-
-                        const dataCorr = new Date(parseInt(selAno), mesIndex, parseInt(diaNome));
-                        if(!mapaEstudantes[chaveAluno].ultimaDataObj || dataCorr > mapaEstudantes[chaveAluno].ultimaDataObj) {
-                            mapaEstudantes[chaveAluno].ultimaDataObj = dataCorr;
-                            mapaEstudantes[chaveAluno].ultimaDataStr = `${diaNome}/${String(mesIndex + 1).padStart(2, '0')}/${selAno}`;
-                            if(reg.componente || reg.atendimento) {
-                                mapaEstudantes[chaveAluno].ultimaAvaliacao = reg.componente || reg.atendimento;
+                            if(!mapaEstudantes[chaveAluno]) {
+                                mapaEstudantes[chaveAluno] = {
+                                    nome: reg.estudante.trim(),
+                                    matricula: (reg.mat && reg.mat.trim()) ? reg.mat.trim() : "-",
+                                    ultimaDataObj: null,
+                                    ultimaDataStr: '-',
+                                    ultimoComponente: '-'
+                                };
                             }
-                            if(reg.professor) {
-                                mapaEstudantes[chaveAluno].ultimoProfessor = reg.professor;
+
+                            // Registra apenas a data da última FREQUÊNCIA marcada
+                            if(reg.frequencia) {
+                                const dataCorr = new Date(parseInt(selAno), mesIndex, parseInt(diaNome));
+                                if(!mapaEstudantes[chaveAluno].ultimaDataObj || dataCorr >= mapaEstudantes[chaveAluno].ultimaDataObj) {
+                                    mapaEstudantes[chaveAluno].ultimaDataObj = dataCorr;
+                                    mapaEstudantes[chaveAluno].ultimaDataStr = `${diaNome.padStart(2, '0')}/${String(mesIndex + 1).padStart(2, '0')}/${selAno}`;
+                                    if(reg.componente && reg.componente.trim()) {
+                                        mapaEstudantes[chaveAluno].ultimoComponente = reg.componente.trim();
+                                    }
+                                }
                             }
-                        }
+                        });
                     });
                 });
             });
 
             const listaAlunos = Object.values(mapaEstudantes);
 
+            // Ordena os alunos em ordem alfabética pelo nome
+            listaAlunos.sort((a, b) => a.nome.localeCompare(b.nome));
+
             if(listaAlunos.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="21" class="no-data-msg">Nenhum estudante com FREQUÊNCIA registrada nesta área em ${selAno} ainda.</td></tr>`;
+                tbody.innerHTML = `<tr><td colspan="5" class="no-data-msg">Nenhum estudante com frequência registrada em ${selAno}.</td></tr>`;
                 document.getElementById('cntAtendidos').innerText = '0';
                 document.getElementById('cntPreenchidos').innerText = '0';
                 return;
             }
 
-            const hoje = new Date();
-            let totalPreenchidos = listaAlunos.length;
-            let totalComFreq = 0;
-
             listaAlunos.forEach((aluno, idx) => {
-                let diasDecorridos = "-";
-                let statusBola = "🔴";
-                let statusTitle = "Mais de 60 dias sem frequência";
-
-                if(aluno.ultimaDataObj) {
-                    const diffTime = Math.abs(hoje - aluno.ultimaDataObj);
-                    diasDecorridos = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-
-                    if(diasDecorridos <= 30) {
-                        statusBola = "🟢";
-                        statusTitle = "Ativo (Frequência em até 30 dias)";
-                    } else if(diasDecorridos >= 31 && diasDecorridos <= 59) {
-                        statusBola = "🟡";
-                        statusTitle = "Atenção (31 a 59 dias sem frequência)";
-                    } else {
-                        statusBola = "🔴";
-                        statusTitle = "Alerta (60 dias ou mais sem frequência)";
-                    }
-                }
-
-                if(aluno.total > 0) totalComFreq++;
-
-                let colunasMeses = "";
-                aluno.meses.forEach(qtd => {
-                    colunasMeses += `<td>${qtd > 0 ? qtd : '-'}</td>`;
-                });
-
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="ord-col">${idx + 1}</td>
-                    <td title="${statusTitle}"><span class="status-dot">${statusBola}</span></td>
                     <td class="align-left" style="font-weight:600;">${aluno.nome}</td>
                     <td style="font-weight:bold; color:#0b5736;">${aluno.matricula}</td>
-                    ${colunasMeses}
-                    <td style="font-weight:bold; background:#f0fdf4;">${aluno.total}</td>
-                    <td>${aluno.ultimaAvaliacao}</td>
-                    <td>${aluno.ultimaDataStr}</td>
-                    <td style="font-weight:bold;">${diasDecorridos !== "-" ? diasDecorridos + " dias" : "-"}</td>
-                    <td>${aluno.ultimoProfessor}</td>
+                    <td style="font-weight:bold;">${aluno.ultimaDataStr}</td>
+                    <td>${aluno.ultimoComponente}</td>
                 `;
                 tbody.appendChild(tr);
             });
 
-            document.getElementById('cntAtendidos').innerText = totalComFreq;
-            document.getElementById('cntPreenchidos').innerText = totalPreenchidos;
+            document.getElementById('cntAtendidos').innerText = listaAlunos.filter(a => a.ultimaDataStr !== '-').length;
+            document.getElementById('cntPreenchidos').innerText = listaAlunos.length;
         }
 
-        /* LÓGICA DA NOVA ABA: SITUAÇÃO DO ESTUDANTE */
         function processarEExibirRelatorioSituacao(dadosAno, areaKey) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
@@ -1007,15 +943,17 @@
                             };
                         }
 
-                        const dataCorr = new Date(parseInt(selAno), mesIndex, parseInt(diaNome));
-                        if(!mapaEstudantes[chaveAluno].ultimaDataObj || dataCorr > mapaEstudantes[chaveAluno].ultimaDataObj) {
-                            mapaEstudantes[chaveAluno].ultimaDataObj = dataCorr;
-                            mapaEstudantes[chaveAluno].ultimaDataStr = `${diaNome}/${String(mesIndex + 1).padStart(2, '0')}/${selAno}`;
-                            if(reg.componente || reg.atendimento) {
-                                mapaEstudantes[chaveAluno].ultimaAvaliacao = reg.componente || reg.atendimento;
-                            }
-                            if(reg.professor) {
-                                mapaEstudantes[chaveAluno].ultimoProfessor = reg.professor;
+                        if(reg.frequencia) {
+                            const dataCorr = new Date(parseInt(selAno), mesIndex, parseInt(diaNome));
+                            if(!mapaEstudantes[chaveAluno].ultimaDataObj || dataCorr > mapaEstudantes[chaveAluno].ultimaDataObj) {
+                                mapaEstudantes[chaveAluno].ultimaDataObj = dataCorr;
+                                mapaEstudantes[chaveAluno].ultimaDataStr = `${diaNome}/${String(mesIndex + 1).padStart(2, '0')}/${selAno}`;
+                                if(reg.componente || reg.atendimento) {
+                                    mapaEstudantes[chaveAluno].ultimaAvaliacao = reg.componente || reg.atendimento;
+                                }
+                                if(reg.professor) {
+                                    mapaEstudantes[chaveAluno].ultimoProfessor = reg.professor;
+                                }
                             }
                         }
                     });
@@ -1062,12 +1000,10 @@
                 }
             });
 
-            // Atualiza os contadores nos três cartões
             document.getElementById('badgeAtivo').innerText = `${countAtivo} alunos`;
             document.getElementById('badgePreEvadido').innerText = `${countPre} alunos`;
             document.getElementById('badgeEvadido').innerText = `${countEvadido} alunos`;
 
-            // Filtra pela situação clicada pelo professor
             let listaExibir = [];
             if(selSituacaoFiltro === 'ATIVO') listaExibir = alunosAtivos;
             else if(selSituacaoFiltro === 'PRE_EVADIDO') listaExibir = alunosPre;
