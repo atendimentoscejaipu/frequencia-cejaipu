@@ -30,7 +30,7 @@
         
         .login-banner-header { width: 100%; height: 130px; background: #0b5736 url('CAPA 2.jpg') center/cover no-repeat; position: relative; border-bottom: 4px solid var(--yellow-gold); }
         
-        .logo-container { width: 90px; height: 90px; margin: -45px auto 12px; border-radius: 50%; border: 4px solid #ffffff; padding: 2px; display: flex; align-items: center; justify-content: center; background: #fff; box-shadow: 0 4px 10px rgba(0,0,0,0.2); position: relative; z-index: 2; }
+        .logo-container { width: 95px; height: 95px; margin: -48px auto 12px; border-radius: 50%; border: 3px solid #ffffff; padding: 0; display: flex; align-items: center; justify-content: center; background: #fff; box-shadow: 0 4px 12px rgba(0,0,0,0.3); position: relative; z-index: 2; }
         .logo-img { width: 100%; height: 100%; object-fit: contain; border-radius: 50%; }
 
         .login-card-body { padding: 10px 30px 30px; }
@@ -51,7 +51,7 @@
         .app-header-banner { width: 100%; height: 100px; background: #0b5736 url('CAPA 2.jpg') center/cover no-repeat; border-bottom: 4px solid var(--yellow-gold); display: flex; align-items: center; justify-content: space-between; padding: 0 25px; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.6); }
         
         .app-header-left { display: flex; align-items: center; gap: 15px; }
-        .app-header-logo { width: 65px; height: 65px; background: white; border-radius: 50%; padding: 2px; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
+        .app-header-logo { width: 68px; height: 68px; background: white; border-radius: 50%; padding: 0; border: 2px solid white; box-shadow: 0 2px 8px rgba(0,0,0,0.3); }
         .app-header-title h1 { font-size: 1.3rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px; }
         .app-header-title p { font-size: 0.85rem; opacity: 0.95; font-style: italic; }
 
@@ -104,22 +104,69 @@
 </head>
 <body>
 
+    <!-- SÍMBOLO OFICIAL CEJA (Sua cópia SVG perfeita) -->
+    <svg id="cejaOfficialLogoSvg" style="display:none;">
+        <g id="cejaSymbolGraphic">
+            <defs>
+                <path id="txtTopPath" d="M 28,100 A 72,72 0 1,1 172,100" />
+                <path id="txtBottomPath" d="M 172,100 A 72,72 0 0,1 28,100" />
+                <linearGradient id="gradCejaGreen" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#228b22"/>
+                    <stop offset="100%" stop-color="#0b5736"/>
+                </linearGradient>
+            </defs>
+            <!-- Anel Amarelo Dourado Externo -->
+            <circle cx="100" cy="100" r="98" fill="none" stroke="#ca8a04" stroke-width="3"/>
+            <!-- Anel Branco Intermediário -->
+            <circle cx="100" cy="100" r="95" fill="none" stroke="#ffffff" stroke-width="3"/>
+            <!-- Anel Verde Escuro Principal -->
+            <circle cx="100" cy="100" r="80" fill="#0b5736" stroke="#ca8a04" stroke-width="2"/>
+            <!-- Círculo Interno Branco -->
+            <circle cx="100" cy="100" r="61" fill="#ffffff"/>
+            
+            <!-- Texto Superior Curvado -->
+            <text font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="11" fill="#ffffff" letter-spacing="0.3">
+                <textPath href="#txtTopPath" startOffset="50%" text-anchor="middle">CEJA DR. GERARDO CAMELO MADEIRA</textPath>
+            </text>
+            
+            <!-- Texto Inferior Curvado -->
+            <text font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="13" fill="#ffffff" letter-spacing="0.8">
+                <textPath href="#txtBottomPath" startOffset="50%" text-anchor="middle">IPU - CE</textPath>
+            </text>
+            
+            <!-- Texto Central CEJA com Sombra 3D -->
+            <text x="101" y="90" font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="41" fill="#888888" text-anchor="middle">CEJA</text>
+            <text x="99" y="88" font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="41" fill="url(#gradCejaGreen)" stroke="#0b5736" stroke-width="1.2" text-anchor="middle">CEJA</text>
+            
+            <!-- Trio de Figuras Humanas do Logo do CEJA -->
+            <!-- Figura Amarela (Esquerda) -->
+            <g transform="translate(73, 106)">
+                <circle cx="12" cy="7" r="5.5" fill="#ca8a04"/>
+                <path d="M 12 13.5 C 8 20, 5 30, 3 42 M 12 13.5 C 16 20, 18 30, 17 42 M 12 15 L 3 5 M 12 18 C 17 23, 22 26, 25 30" fill="none" stroke="#ca8a04" stroke-width="4.2" stroke-linecap="round"/>
+            </g>
+            <!-- Figura Verde (Meio) -->
+            <g transform="translate(90, 103)">
+                <circle cx="12" cy="7" r="5.5" fill="#0b5736"/>
+                <path d="M 12 13.5 C 8 20, 6 30, 5 44 M 12 13.5 C 16 20, 18 30, 19 44 M 12 13.5 L 18 2 M 12 18 L 4 25" fill="none" stroke="#0b5736" stroke-width="4.2" stroke-linecap="round"/>
+            </g>
+            <!-- Figura Vinho (Direita) -->
+            <g transform="translate(107, 106)">
+                <circle cx="12" cy="7" r="5.5" fill="#581845"/>
+                <path d="M 12 13.5 C 8 20, 6 30, 5 42 M 12 13.5 C 16 20, 20 30, 22 42 M 12 13.5 L 21 4 M 12 18 L 3 25" fill="none" stroke="#581845" stroke-width="4.2" stroke-linecap="round"/>
+            </g>
+        </g>
+    </svg>
+
     <!-- 1. TELA DE LOGIN -->
     <div id="login-screen" class="login-screen">
         <div class="login-card">
             <!-- Banner de Capa -->
             <div class="login-banner-header"></div>
 
-            <!-- Recorte do Símbolo Oficial CEJA -->
+            <!-- Logotipo Oficial do CEJA -->
             <div class="logo-container">
-                <svg viewBox="0 0 100 100" class="logo-img">
-                    <circle cx="50" cy="50" r="46" fill="none" stroke="#0b5736" stroke-width="6"/>
-                    <text x="50" y="24" font-size="7.5" font-weight="bold" fill="#0b5736" text-anchor="middle">CEJA DR. GERARDO CAMELO MADEIRA</text>
-                    <text x="50" y="88" font-size="8" font-weight="bold" fill="#0b5736" text-anchor="middle">IPU - CE</text>
-                    <path d="M 30 62 C 35 45, 45 40, 50 55 C 55 40, 65 45, 70 62" fill="none" stroke="#ca8a04" stroke-width="4"/>
-                    <circle cx="38" cy="40" r="4" fill="#0b5736"/>
-                    <circle cx="50" cy="35" r="4" fill="#ca8a04"/>
-                    <circle cx="62" cy="40" r="4" fill="#0b5736"/>
+                <svg viewBox="0 0 200 200" class="logo-img">
+                    <use href="#cejaSymbolGraphic"/>
                 </svg>
             </div>
 
@@ -153,14 +200,8 @@
         <header class="app-header-banner">
             <div class="app-header-left">
                 <div class="app-header-logo">
-                    <svg viewBox="0 0 100 100" style="width:100%; height:100%;">
-                        <circle cx="50" cy="50" r="46" fill="none" stroke="#0b5736" stroke-width="6"/>
-                        <text x="50" y="24" font-size="7.5" font-weight="bold" fill="#0b5736" text-anchor="middle">CEJA DR. GERARDO CAMELO MADEIRA</text>
-                        <text x="50" y="88" font-size="8" font-weight="bold" fill="#0b5736" text-anchor="middle">IPU - CE</text>
-                        <path d="M 30 62 C 35 45, 45 40, 50 55 C 55 40, 65 45, 70 62" fill="none" stroke="#ca8a04" stroke-width="4"/>
-                        <circle cx="38" cy="40" r="4" fill="#0b5736"/>
-                        <circle cx="50" cy="35" r="4" fill="#ca8a04"/>
-                        <circle cx="62" cy="40" r="4" fill="#0b5736"/>
+                    <svg viewBox="0 0 200 200" style="width:100%; height:100%;">
+                        <use href="#cejaSymbolGraphic"/>
                     </svg>
                 </div>
                 <div class="app-header-title">
@@ -204,6 +245,8 @@
                     <button class="pill active-green" onclick="setArea(this, 'LINGUAGENS')">LINGUAGENS</button>
                     <button class="pill" onclick="setArea(this, 'CIÊNCIAS DA NATUREZA E MATEMÁTICA')">CIÊNCIAS DA NATUREZA E MATEMÁTICA</button>
                     <button class="pill" onclick="setArea(this, 'CIÊNCIAS HUMANAS')">CIÊNCIAS HUMANAS</button>
+                    <button class="pill" onclick="setArea(this, 'LEI')">LEI</button>
+                    <button class="pill" onclick="setArea(this, 'MULTIMEIOS')">MULTIMEIOS</button>
                 </div>
 
                 <!-- Mês -->
