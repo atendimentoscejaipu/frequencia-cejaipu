@@ -15,7 +15,7 @@
             --green-bg: #073822;
             --green-light: #15803d;
             --yellow-gold: #ca8a04;
-            --orange-wave: #f97316;
+            --red-alert: #dc2626;
             --gray-bg: #f8fafc;
             --border-color: #cbd5e1;
         }
@@ -84,19 +84,22 @@
         .summary-title { font-size: 1rem; font-weight: bold; color: var(--green-dark); margin-bottom: 4px; text-transform: uppercase; }
         .summary-details { font-size: 0.85rem; color: #166534; display: flex; gap: 20px; }
 
-        /* TABELA DE FREQUÊNCIA */
+        /* TABELA DE FREQUÊNCIA E ESTUDANTES */
         .table-container { background: white; border-radius: 6px; border: 1px solid var(--border-color); overflow-x: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
-        table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
-        th { background-color: var(--green-dark); color: white; padding: 10px 8px; text-align: center; font-weight: bold; font-size: 0.82rem; border: 1px solid #084229; text-transform: uppercase; }
-        td { padding: 4px 6px; border: 1px solid #e2e8f0; vertical-align: middle; }
+        table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+        th { background-color: var(--green-dark); color: white; padding: 10px 6px; text-align: center; font-weight: bold; font-size: 0.8rem; border: 1px solid #084229; text-transform: uppercase; white-space: nowrap; }
+        td { padding: 6px 6px; border: 1px solid #e2e8f0; vertical-align: middle; text-align: center; }
         
-        td.ord-col { text-align: center; font-weight: bold; width: 45px; background: #f8fafc; }
-        td.freq-col { text-align: center; width: 90px; }
+        td.ord-col { font-weight: bold; width: 40px; background: #f8fafc; }
+        td.align-left { text-align: left; }
 
         input.cell-input { width: 100%; padding: 6px 8px; border: 1px solid transparent; border-radius: 4px; font-size: 0.88rem; outline: none; background: transparent; }
         input.cell-input:focus { border-color: var(--green-dark); background: #ffffff; }
 
         input[type="checkbox"].freq-check { width: 20px; height: 20px; cursor: pointer; accent-color: var(--green-dark); }
+
+        .status-emoji { font-size: 1.3rem; line-height: 1; }
+        .no-data-msg { padding: 30px; text-align: center; font-size: 0.95rem; color: #475569; font-style: italic; }
     </style>
 </head>
 <body>
@@ -174,7 +177,7 @@
         <main class="main-container">
             <!-- Barra de Ações -->
             <div class="action-bar">
-                <button class="btn-action primary" onclick="salvarFirebase()">Salvar alterações</button>
+                <button class="btn-action primary" id="btnSalvar" onclick="salvarFirebase()">Salvar alterações</button>
                 <button class="btn-action" onclick="exportarCsv()">Exportar dia (CSV)</button>
                 <button class="btn-action" onclick="alert('Conectado à Nuvem do Firebase!')">Armazenamento em nuvem</button>
                 <span class="status-badge" id="statusText">Modo online: Sincronizado em tempo real</span>
@@ -225,21 +228,12 @@
 
             <!-- Tabela Principal -->
             <div class="table-container">
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width:45px;">ORD.</th>
-                            <th style="width:220px;">ESTUDANTE</th>
-                            <th style="width:90px;">MAT.</th>
-                            <th style="width:80px;">NÍVEL</th>
-                            <th style="width:200px;">COMPONENTE CURRICULAR</th>
-                            <th style="width:180px;">PROFESSOR(A)</th>
-                            <th style="width:180px;">ATENDIMENTO</th>
-                            <th style="width:90px;" id="colFreqHeader">FREQUÊNCIA</th>
-                        </tr>
+                <table id="mainTable">
+                    <thead id="tableHeader">
+                        <!-- Gerado dinamicamente via JS -->
                     </thead>
                     <tbody id="tableBody">
-                        <!-- 30 linhas geradas dinamicamente -->
+                        <!-- Gerado dinamicamente via JS -->
                     </tbody>
                 </table>
             </div>
@@ -270,17 +264,17 @@
         let refListener = null;
 
         const MESES = ["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
+        const MESES_SIGLAS = ["JAN","FEV","MAR","ABR","MAI","JUN","JUL","AGO","SET","OUT","NOV","DEZ"];
 
         // INICIALIZAÇÃO DA PÁGINA
         window.addEventListener('DOMContentLoaded', () => {
             renderFiltros();
-            renderTabelaVazia();
             
             document.getElementById('login-form').addEventListener('submit', (e) => {
                 e.preventDefault();
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
-                conectarFirebaseEOuvir();
+                setModo('FREQUENCIA');
             });
         });
 
@@ -296,23 +290,24 @@
             const btnEst = document.getElementById('btnModoEst');
             const mesCont = document.getElementById('mesContainer');
             const diaCont = document.getElementById('diaContainer');
-            const colFreq = document.getElementById('colFreqHeader');
+            const btnSalvar = document.getElementById('btnSalvar');
 
             if(m === 'FREQUENCIA') {
                 btnFreq.classList.add('active-gold');
                 btnEst.classList.remove('active-gold');
                 mesCont.style.display = 'flex';
                 diaCont.style.display = 'flex';
-                if(colFreq) colFreq.style.display = 'table-cell';
+                btnSalvar.style.display = 'inline-block';
             } else {
                 btnEst.classList.add('active-gold');
                 btnFreq.classList.remove('active-gold');
                 mesCont.style.display = 'none';
                 diaCont.style.display = 'none';
-                if(colFreq) colFreq.style.display = 'none';
+                btnSalvar.style.display = 'none'; // Na aba estudante é apenas relatório consolidado
             }
 
             atualizarHeader();
+            renderEstruturaTabela();
             conectarFirebaseEOuvir();
         }
 
@@ -380,13 +375,51 @@
             if(selModo === 'FREQUENCIA') {
                 document.getElementById('summaryTitle').innerText = `FREQUÊNCIA DIÁRIA: ${selArea} — ${selMes} — DIA ${selDia} — ${selAno}`;
             } else {
-                document.getElementById('summaryTitle').innerText = `CADASTRO DE ESTUDANTES: ${selArea} — ${selAno}`;
+                document.getElementById('summaryTitle').innerText = `RELATÓRIO CONSOLIDADO DE ESTUDANTES: ${selArea} — ${selAno}`;
             }
             document.getElementById('summaryArea').innerText = selArea;
         }
 
-        // RENDERIZAR TABELA COM 30 LINHAS
-        function renderTabelaVazia() {
+        // MONTA O CABEÇALHO DA TABELA DEPENDENDO DA ABA
+        function renderEstruturaTabela() {
+            const thead = document.getElementById('tableHeader');
+            thead.innerHTML = '';
+
+            if(selModo === 'FREQUENCIA') {
+                thead.innerHTML = `
+                    <tr>
+                        <th style="width:45px;">ORD.</th>
+                        <th style="width:220px;">ESTUDANTE</th>
+                        <th style="width:90px;">MAT.</th>
+                        <th style="width:80px;">NÍVEL</th>
+                        <th style="width:200px;">COMPONENTE CURRICULAR</th>
+                        <th style="width:180px;">PROFESSOR(A)</th>
+                        <th style="width:180px;">ATENDIMENTO</th>
+                        <th style="width:90px;">FREQUÊNCIA</th>
+                    </tr>
+                `;
+                renderTabelaFreqVazia();
+            } else {
+                // Modo ESTUDANTES (Histórico Mês a Mês)
+                thead.innerHTML = `
+                    <tr>
+                        <th>ORD.</th>
+                        <th>STATUS</th>
+                        <th>ESTUDANTE</th>
+                        <th>JAN</th><th>FEV</th><th>MAR</th><th>ABR</th>
+                        <th>MAI</th><th>JUN</th><th>JUL</th><th>AGO</th>
+                        <th>SET</th><th>OUT</th><th>NOV</th><th>DEZ</th>
+                        <th>TOTAL</th>
+                        <th>ÚLTIMA AVALIAÇÃO REALIZADA</th>
+                        <th>ÚLTIMA FREQUÊNCIA</th>
+                        <th>DIAS DECORRIDOS</th>
+                        <th>PROFESSOR(A) DO ÚLTIMO ATENDIMENTO</th>
+                    </tr>
+                `;
+            }
+        }
+
+        function renderTabelaFreqVazia() {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
             for(let i = 1; i <= 30; i++) {
@@ -399,7 +432,7 @@
                     <td><input type="text" class="cell-input" id="componente_${i}" onchange="autoSalvar()"></td>
                     <td><input type="text" class="cell-input" id="professor_${i}" onchange="autoSalvar()"></td>
                     <td><input type="text" class="cell-input" id="atendimento_${i}" onchange="autoSalvar()"></td>
-                    <td class="freq-col cell-freq"><input type="checkbox" class="freq-check" id="freq_${i}" onchange="autoSalvar()"></td>
+                    <td class="freq-col"><input type="checkbox" class="freq-check" id="freq_${i}" onchange="autoSalvar()"></td>
                 `;
                 tbody.appendChild(tr);
             }
@@ -408,26 +441,30 @@
         // CONEXÃO E LEITURA EM TEMPO REAL NO FIREBASE
         function conectarFirebaseEOuvir() {
             const areaKey = selArea.replace(/[^a-zA-Z0-9]/g, "_");
-            let caminho = "";
-
-            if(selModo === "FREQUENCIA") {
-                caminho = `frequencias/${selAno}/${selMes}/${selDia}/${areaKey}`;
-            } else {
-                caminho = `estudantes_cadastro/${selAno}/${areaKey}`;
-            }
 
             if(refListener) {
                 refListener.off();
             }
 
-            refListener = db.ref(caminho);
-            refListener.on('value', (snapshot) => {
-                const dados = snapshot.val() || {};
-                preencherTabelaComDados(dados);
-            });
+            if(selModo === 'FREQUENCIA') {
+                const caminho = `frequencias/${selAno}/${selMes}/${selDia}/${areaKey}`;
+                refListener = db.ref(caminho);
+                refListener.on('value', (snapshot) => {
+                    const dados = snapshot.val() || {};
+                    preencherTabelaFreq(dados);
+                });
+            } else {
+                // MODO ESTUDANTES: Ouve todas as frequências do Ano selecionado
+                const caminhoAno = `frequencias/${selAno}`;
+                refListener = db.ref(caminhoAno);
+                refListener.on('value', (snapshot) => {
+                    const dadosAno = snapshot.val() || {};
+                    processarEExibirRelatorioEstudantes(dadosAno, areaKey);
+                });
+            }
         }
 
-        function preencherTabelaComDados(dados) {
+        function preencherTabelaFreq(dados) {
             let cntAtend = 0;
             let cntPreench = 0;
 
@@ -441,7 +478,6 @@
                 const prof = document.getElementById(`professor_${i}`);
                 const ated = document.getElementById(`atendimento_${i}`);
                 const freq = document.getElementById(`freq_${i}`);
-                const cellFreq = freq ? freq.parentElement : null;
 
                 if(est) est.value = row.estudante || '';
                 if(mat) mat.value = row.mat || '';
@@ -451,10 +487,6 @@
                 if(ated) ated.value = row.atendimento || '';
                 if(freq) freq.checked = !!row.frequencia;
 
-                if(cellFreq) {
-                    cellFreq.style.display = (selModo === 'ESTUDANTES') ? 'none' : 'table-cell';
-                }
-
                 if(row.estudante || row.mat) cntPreench++;
                 if(row.frequencia) cntAtend++;
             }
@@ -463,19 +495,133 @@
             document.getElementById('cntPreenchidos').innerText = cntPreench;
         }
 
+        // PROCESSA O HISTÓRICO MÊS A MÊS E REGRAS DE STATUS (CARINHAS)
+        function processarEExibirRelatorioEstudantes(dadosAno, areaKey) {
+            const tbody = document.getElementById('tableBody');
+            tbody.innerHTML = '';
+
+            const mapaEstudantes = {};
+
+            // Varre Mês -> Dia -> Área no Firebase do Ano selecionado
+            Object.keys(dadosAno).forEach(mesNome => {
+                const mesIndex = MESES.indexOf(mesNome);
+                if(mesIndex === -1) return;
+
+                const mesDados = dadosAno[mesNome] || {};
+                Object.keys(mesDados).forEach(diaNome => {
+                    const diaDados = mesDados[diaNome] || {};
+                    const areaDados = diaDados[areaKey] || {};
+
+                    Object.keys(areaDados).forEach(rowKey => {
+                        const reg = areaDados[rowKey];
+                        if(!reg || !reg.estudante || reg.estudante.trim() === "") return;
+
+                        const chaveAluno = reg.estudante.trim().toUpperCase();
+
+                        if(!mapaEstudantes[chaveAluno]) {
+                            mapaEstudantes[chaveAluno] = {
+                                nome: reg.estudante,
+                                meses: Array(12).fill(0),
+                                total: 0,
+                                ultimaDataObj: null,
+                                ultimaDataStr: '-',
+                                ultimaAvaliacao: '-',
+                                ultimoProfessor: '-'
+                            };
+                        }
+
+                        // Se marcou frequência no dia
+                        if(reg.frequencia) {
+                            mapaEstudantes[chaveAluno].meses[mesIndex]++;
+                            mapaEstudantes[chaveAluno].total++;
+                        }
+
+                        // Calcular a Última Frequência / Atendimento
+                        const dataCorr = new Date(parseInt(selAno), mesIndex, parseInt(diaNome));
+                        if(!mapaEstudantes[chaveAluno].ultimaDataObj || dataCorr > mapaEstudantes[chaveAluno].ultimaDataObj) {
+                            mapaEstudantes[chaveAluno].ultimaDataObj = dataCorr;
+                            mapaEstudantes[chaveAluno].ultimaDataStr = `${diaNome}/${String(mesIndex + 1).padStart(2, '0')}/${selAno}`;
+                            if(reg.componente || reg.atendimento) {
+                                mapaEstudantes[chaveAluno].ultimaAvaliacao = reg.componente || reg.atendimento;
+                            }
+                            if(reg.professor) {
+                                mapaEstudantes[chaveAluno].ultimoProfessor = reg.professor;
+                            }
+                        }
+                    });
+                });
+            });
+
+            const listaAlunos = Object.values(mapaEstudantes);
+
+            if(listaAlunos.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="20" class="no-data-msg">Nenhum estudante com FREQUÊNCIA registrada nesta área em ${selAno} ainda.</td></tr>`;
+                document.getElementById('cntAtendidos').innerText = '0';
+                document.getElementById('cntPreenchidos').innerText = '0';
+                return;
+            }
+
+            const hoje = new Date();
+            let totalPreenchidos = listaAlunos.length;
+            let totalComFreq = 0;
+
+            listaAlunos.forEach((aluno, idx) => {
+                // Cálculo dos dias decorridos
+                let diasDecorridos = "-";
+                let statusEmoji = "🔴 😢"; // Triste por padrão
+                let statusTitle = "Mais de 60 dias sem frequência";
+
+                if(aluno.ultimaDataObj) {
+                    const diffTime = Math.abs(hoje - aluno.ultimaDataObj);
+                    diasDecorridos = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+
+                    if(diasDecorridos <= 30) {
+                        statusEmoji = "🟢 😊";
+                        statusTitle = "Ativo (Frequência em até 30 dias)";
+                    } else if(diasDecorridos >= 31 && diasDecorridos <= 59) {
+                        statusEmoji = "🟡 😟";
+                        statusTitle = "Atenção (31 a 59 dias sem frequência)";
+                    } else {
+                        statusEmoji = "🔴 😢";
+                        statusTitle = "Alerta (60 dias ou mais sem frequência)";
+                    }
+                }
+
+                if(aluno.total > 0) totalComFreq++;
+
+                let colunasMeses = "";
+                aluno.meses.forEach(qtd => {
+                    colunasMeses += `<td>${qtd > 0 ? qtd : '-'}</td>`;
+                });
+
+                const tr = document.createElement('tr');
+                tr.innerHTML = `
+                    <td class="ord-col">${idx + 1}</td>
+                    <td title="${statusTitle}"><span class="status-emoji">${statusEmoji}</span></td>
+                    <td class="align-left" style="font-weight:600;">${aluno.nome}</td>
+                    ${colunasMeses}
+                    <td style="font-weight:bold; background:#f0fdf4;">${aluno.total}</td>
+                    <td>${aluno.ultimaAvaliacao}</td>
+                    <td>${aluno.ultimaDataStr}</td>
+                    <td style="font-weight:bold;">${diasDecorridos !== "-" ? diasDecorridos + " dias" : "-"}</td>
+                    <td>${aluno.ultimoProfessor}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+
+            document.getElementById('cntAtendidos').innerText = totalComFreq;
+            document.getElementById('cntPreenchidos').innerText = totalPreenchidos;
+        }
+
         function autoSalvar() {
             salvarFirebase(true);
         }
 
         function salvarFirebase(silencioso = false) {
-            const areaKey = selArea.replace(/[^a-zA-Z0-9]/g, "_");
-            let caminho = "";
+            if(selModo !== 'FREQUENCIA') return;
 
-            if(selModo === "FREQUENCIA") {
-                caminho = `frequencias/${selAno}/${selMes}/${selDia}/${areaKey}`;
-            } else {
-                caminho = `estudantes_cadastro/${selAno}/${areaKey}`;
-            }
+            const areaKey = selArea.replace(/[^a-zA-Z0-9]/g, "_");
+            const caminho = `frequencias/${selAno}/${selMes}/${selDia}/${areaKey}`;
             
             const payload = {};
             let cntAtend = 0;
@@ -499,10 +645,10 @@
                         componente: comp,
                         professor: prof,
                         atendimento: ated,
-                        frequencia: (selModo === "FREQUENCIA") ? freq : false
+                        frequencia: freq
                     };
                     cntPreench++;
-                    if(freq && selModo === "FREQUENCIA") cntAtend++;
+                    if(freq) cntAtend++;
                 }
             }
 
@@ -521,24 +667,36 @@
 
         // EXPORTAR CSV
         function exportarCsv() {
-            let csv = "ORD.;ESTUDANTE;MAT.;NÍVEL;COMPONENTE CURRICULAR;PROFESSOR(A);ATENDIMENTO;FREQUÊNCIA\n";
-            
-            for(let i = 1; i <= 30; i++) {
-                const est = document.getElementById(`estudante_${i}`).value;
-                const mat = document.getElementById(`mat_${i}`).value;
-                const niv = document.getElementById(`nivel_${i}`).value;
-                const comp = document.getElementById(`componente_${i}`).value;
-                const prof = document.getElementById(`professor_${i}`).value;
-                const ated = document.getElementById(`atendimento_${i}`).value;
-                const freq = document.getElementById(`freq_${i}`).checked ? "SIM" : "NÃO";
+            let csv = "";
+            if(selModo === 'FREQUENCIA') {
+                csv = "ORD.;ESTUDANTE;MAT.;NÍVEL;COMPONENTE CURRICULAR;PROFESSOR(A);ATENDIMENTO;FREQUÊNCIA\n";
+                for(let i = 1; i <= 30; i++) {
+                    const est = document.getElementById(`estudante_${i}`).value;
+                    const mat = document.getElementById(`mat_${i}`).value;
+                    const niv = document.getElementById(`nivel_${i}`).value;
+                    const comp = document.getElementById(`componente_${i}`).value;
+                    const prof = document.getElementById(`professor_${i}`).value;
+                    const ated = document.getElementById(`atendimento_${i}`).value;
+                    const freq = document.getElementById(`freq_${i}`).checked ? "SIM" : "NÃO";
 
-                csv += `${i};"${est}";"${mat}";"${niv}";"${comp}";"${prof}";"${ated}";"${freq}"\n`;
+                    csv += `${i};"${est}";"${mat}";"${niv}";"${comp}";"${prof}";"${ated}";"${freq}"\n`;
+                }
+            } else {
+                csv = "ORD.;ESTUDANTE;JAN;FEV;MAR;ABR;MAI;JUN;JUL;AGO;SET;OUT;NOV;DEZ;TOTAL;ÚLTIMA AVALIAÇÃO;ÚLTIMA FREQUÊNCIA;DIAS DECORRIDOS;PROFESSOR\n";
+                // Exporta linhas da tabela visível
+                const trs = document.querySelectorAll('#tableBody tr');
+                trs.forEach((tr) => {
+                    const tds = Array.from(tr.children).map(td => `"${td.innerText.replace(/"/g, '""')}"`);
+                    if(tds.length > 3) {
+                        csv += tds.join(";") + "\n";
+                    }
+                });
             }
 
             const blob = new Blob(["\uFEFF" + csv], { type: 'text/csv;charset=utf-8;' });
             const link = document.createElement("a");
             link.href = URL.createObjectURL(blob);
-            link.download = `${selModo}_${selAno}_${selMes}_Dia${selDia}_${selArea}.csv`;
+            link.download = `${selModo}_${selAno}_${selArea}.csv`;
             link.click();
         }
     </script>
