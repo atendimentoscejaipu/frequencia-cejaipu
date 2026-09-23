@@ -79,6 +79,45 @@
         .pill.active-green { background-color: var(--green-dark); color: white; border-color: var(--green-dark); }
         .pill.active-outline { background-color: white; color: var(--green-dark); border: 2px solid var(--green-dark); font-weight: bold; }
 
+        /* CAIXA FLUTUANTE DE ANO COM BALÃO E SETAS */
+        .year-selector-wrapper { position: relative; display: inline-flex; align-items: center; gap: 6px; }
+        .pill-nav { padding: 5px 10px; border-radius: 20px; background: white; border: 1px solid var(--border-color); font-size: 0.82rem; cursor: pointer; color: #334155; font-weight: bold; transition: all 0.15s; }
+        .pill-nav:hover { background: #e2e8f0; color: var(--green-dark); }
+        
+        .year-btn-trigger { display: inline-flex; align-items: center; gap: 6px; cursor: pointer; user-select: none; }
+        .year-btn-trigger .arrow-icon { font-size: 0.7rem; transition: transform 0.2s; }
+
+        .year-popover {
+            position: absolute;
+            top: calc(100% + 10px);
+            left: 50%;
+            transform: translateX(-50%);
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.25);
+            padding: 12px;
+            z-index: 1000;
+            width: 280px;
+        }
+        .year-popover.hidden { display: none; }
+        .popover-arrow {
+            position: absolute;
+            top: -7px;
+            left: 50%;
+            transform: translateX(-50%) rotate(45deg);
+            width: 12px;
+            height: 12px;
+            background: white;
+            border-left: 1px solid var(--border-color);
+            border-top: 1px solid var(--border-color);
+        }
+        .popover-header { font-weight: bold; font-size: 0.8rem; color: var(--green-dark); margin-bottom: 8px; text-align: center; text-transform: uppercase; border-bottom: 1px solid #f1f5f9; padding-bottom: 6px; }
+        .year-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 6px; max-height: 190px; overflow-y: auto; padding-right: 2px; }
+        .year-grid-item { padding: 6px 2px; text-align: center; border-radius: 6px; border: 1px solid #e2e8f0; font-size: 0.82rem; font-weight: 600; cursor: pointer; background: #f8fafc; color: #334155; transition: all 0.15s; }
+        .year-grid-item:hover { background: #e2e8f0; color: var(--green-dark); }
+        .year-grid-item.active { background: var(--yellow-gold); color: white; border-color: var(--yellow-gold); font-weight: bold; }
+
         /* RESUMO DA FREQUÊNCIA */
         .summary-card { background: #f0fdf4; border: 1px solid #bbf7d0; padding: 12px 18px; border-radius: 6px; margin-bottom: 15px; }
         .summary-title { font-size: 1rem; font-weight: bold; color: var(--green-dark); margin-bottom: 4px; text-transform: uppercase; }
@@ -216,8 +255,26 @@
                     <button class="pill" id="btnModoProf" onclick="setModo('PROFESSORES')">ATENDIMENTO MENSAL</button>
                 </div>
 
+                <!-- SELETOR DE ANO EM CAIXA FLUTUANTE COM BALÃO E SETAS -->
                 <div class="filter-row" id="anoContainer">
                     <span class="filter-label">Ano letivo</span>
+                    <div class="year-selector-wrapper">
+                        <button class="pill-nav" onclick="alterarAno(-1)" title="Ano Anterior">◄</button>
+                        
+                        <button class="pill active-gold year-btn-trigger" id="btnAnoSelect" onclick="toggleYearPopover(event)">
+                            <span id="labelAnoAtual">2026</span>
+                            <span class="arrow-icon">▼</span>
+                        </button>
+
+                        <button class="pill-nav" onclick="alterarAno(1)" title="Próximo Ano">►</button>
+
+                        <!-- Balão Flutuante (Popover) -->
+                        <div id="yearPopover" class="year-popover hidden" onclick="event.stopPropagation()">
+                            <div class="popover-arrow"></div>
+                            <div class="popover-header">Selecionar Ano Letivo</div>
+                            <div class="year-grid" id="yearGrid"></div>
+                        </div>
+                    </div>
                 </div>
 
                 <div class="filter-row" id="areaContainer">
@@ -280,7 +337,6 @@
         let refListener = null;
         let senhaAtendimentoAutorizada = false;
         
-        // Listas independentes para o autocompletar inline de cada campo
         let listasSugestao = {
             estudante: [],
             mat: [],
@@ -299,6 +355,15 @@
                 document.getElementById('login-screen').classList.add('hidden');
                 document.getElementById('main-app').classList.remove('hidden');
                 setModo('FREQUENCIA');
+            });
+
+            // Fecha o balão de ano ao clicar fora
+            document.addEventListener('click', (e) => {
+                const popover = document.getElementById('yearPopover');
+                const trigger = document.getElementById('btnAnoSelect');
+                if (popover && !popover.classList.contains('hidden') && !trigger.contains(e.target)) {
+                    popover.classList.add('hidden');
+                }
             });
         });
 
@@ -352,20 +417,48 @@
             conectarFirebaseEOuvir();
         }
 
+        /* LÓGICA DO SELETOR DE ANO COM BALÃO FLUTUANTE */
+        function toggleYearPopover(e) {
+            e.stopPropagation();
+            const popover = document.getElementById('yearPopover');
+            popover.classList.toggle('hidden');
+        }
+
+        function selecionarAno(ano) {
+            selAno = String(ano);
+            document.getElementById('labelAnoAtual').innerText = selAno;
+            
+            // Atualiza classe active nos itens do balão
+            document.querySelectorAll('.year-grid-item').forEach(item => {
+                if(item.innerText === selAno) {
+                    item.classList.add('active');
+                } else {
+                    item.classList.remove('active');
+                }
+            });
+
+            document.getElementById('yearPopover').classList.add('hidden');
+            atualizarHeader();
+            conectarFirebaseEOuvir();
+        }
+
+        function alterarAno(delta) {
+            let novoAno = parseInt(selAno) + delta;
+            if (novoAno >= 2026 && novoAno <= 2049) {
+                selecionarAno(novoAno);
+            }
+        }
+
         function renderFiltros() {
-            const anoCont = document.getElementById('anoContainer');
+            // Monta o grid do balão de anos (2026 até 2049)
+            const yearGrid = document.getElementById('yearGrid');
+            yearGrid.innerHTML = '';
             for(let a = 2026; a <= 2049; a++) {
-                const btn = document.createElement('button');
-                btn.className = `pill ${a == 2026 ? 'active-gold' : ''}`;
-                btn.innerText = a;
-                btn.onclick = () => {
-                    document.querySelectorAll('#anoContainer .pill').forEach(p => p.classList.remove('active-gold'));
-                    btn.classList.add('active-gold');
-                    selAno = String(a);
-                    atualizarHeader();
-                    conectarFirebaseEOuvir();
-                };
-                anoCont.appendChild(btn);
+                const item = document.createElement('div');
+                item.className = `year-grid-item ${a == parseInt(selAno) ? 'active' : ''}`;
+                item.innerText = a;
+                item.onclick = () => selecionarAno(a);
+                yearGrid.appendChild(item);
             }
 
             const mesCont = document.getElementById('mesContainer');
@@ -487,32 +580,21 @@
             }
         }
 
-        // AUTOCOMPLETAR INLINE SEMI-AUTOMÁTICO INDEPENDENTE PARA CADA CAMPO
         function handleInlineAutocomplete(e, fieldName) {
             const input = e.target;
             const typedVal = input.value;
 
-            // Se o usuário estiver apagando com Backspace/Delete, não sugere
-            if (e.inputType && e.inputType.startsWith('delete')) {
-                return;
-            }
-
+            if (e.inputType && e.inputType.startsWith('delete')) return;
             if (!typedVal || typedVal.trim() === '') return;
 
             const query = typedVal.toUpperCase();
             const lista = listasSugestao[fieldName] || [];
-
-            // Busca sugestão histórica que comece com o texto digitado
             const match = lista.find(item => item.toUpperCase().startsWith(query));
 
             if (match) {
                 const fullText = match;
                 const typedLength = typedVal.length;
-
-                // Preenche o texto na célula
                 input.value = fullText;
-
-                // Seleciona/Destaca em azul apenas o trecho sugerido
                 input.setSelectionRange(typedLength, fullText.length);
             }
         }
