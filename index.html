@@ -104,7 +104,10 @@
 </head>
 <body>
 
-    <!-- SÍMBOLO OFICIAL CEJA (Sua cópia SVG perfeita) -->
+    <!-- LISTA DE SUGESTÕES / DICAS PARA AUTOPREENCHIMENTO -->
+    <datalist id="dlEstudantes"></datalist>
+
+    <!-- SÍMBOLO OFICIAL CEJA -->
     <svg id="cejaOfficialLogoSvg" style="display:none;">
         <g id="cejaSymbolGraphic">
             <defs>
@@ -115,41 +118,30 @@
                     <stop offset="100%" stop-color="#0b5736"/>
                 </linearGradient>
             </defs>
-            <!-- Anel Amarelo Dourado Externo -->
             <circle cx="100" cy="100" r="98" fill="none" stroke="#ca8a04" stroke-width="3"/>
-            <!-- Anel Branco Intermediário -->
             <circle cx="100" cy="100" r="95" fill="none" stroke="#ffffff" stroke-width="3"/>
-            <!-- Anel Verde Escuro Principal -->
             <circle cx="100" cy="100" r="80" fill="#0b5736" stroke="#ca8a04" stroke-width="2"/>
-            <!-- Círculo Interno Branco -->
             <circle cx="100" cy="100" r="61" fill="#ffffff"/>
             
-            <!-- Texto Superior Curvado -->
             <text font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="11" fill="#ffffff" letter-spacing="0.3">
                 <textPath href="#txtTopPath" startOffset="50%" text-anchor="middle">CEJA DR. GERARDO CAMELO MADEIRA</textPath>
             </text>
             
-            <!-- Texto Inferior Curvado -->
             <text font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="13" fill="#ffffff" letter-spacing="0.8">
                 <textPath href="#txtBottomPath" startOffset="50%" text-anchor="middle">IPU - CE</textPath>
             </text>
             
-            <!-- Texto Central CEJA com Sombra 3D -->
             <text x="101" y="90" font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="41" fill="#888888" text-anchor="middle">CEJA</text>
             <text x="99" y="88" font-family="'Arial Black', 'Impact', sans-serif" font-weight="900" font-size="41" fill="url(#gradCejaGreen)" stroke="#0b5736" stroke-width="1.2" text-anchor="middle">CEJA</text>
             
-            <!-- Trio de Figuras Humanas do Logo do CEJA -->
-            <!-- Figura Amarela (Esquerda) -->
             <g transform="translate(73, 106)">
                 <circle cx="12" cy="7" r="5.5" fill="#ca8a04"/>
                 <path d="M 12 13.5 C 8 20, 5 30, 3 42 M 12 13.5 C 16 20, 18 30, 17 42 M 12 15 L 3 5 M 12 18 C 17 23, 22 26, 25 30" fill="none" stroke="#ca8a04" stroke-width="4.2" stroke-linecap="round"/>
             </g>
-            <!-- Figura Verde (Meio) -->
             <g transform="translate(90, 103)">
                 <circle cx="12" cy="7" r="5.5" fill="#0b5736"/>
                 <path d="M 12 13.5 C 8 20, 6 30, 5 44 M 12 13.5 C 16 20, 18 30, 19 44 M 12 13.5 L 18 2 M 12 18 L 4 25" fill="none" stroke="#0b5736" stroke-width="4.2" stroke-linecap="round"/>
             </g>
-            <!-- Figura Vinho (Direita) -->
             <g transform="translate(107, 106)">
                 <circle cx="12" cy="7" r="5.5" fill="#581845"/>
                 <path d="M 12 13.5 C 8 20, 6 30, 5 42 M 12 13.5 C 16 20, 20 30, 22 42 M 12 13.5 L 21 4 M 12 18 L 3 25" fill="none" stroke="#581845" stroke-width="4.2" stroke-linecap="round"/>
@@ -160,10 +152,7 @@
     <!-- 1. TELA DE LOGIN -->
     <div id="login-screen" class="login-screen">
         <div class="login-card">
-            <!-- Banner de Capa -->
             <div class="login-banner-header"></div>
-
-            <!-- Logotipo Oficial do CEJA -->
             <div class="logo-container">
                 <svg viewBox="0 0 200 200" class="logo-img">
                     <use href="#cejaSymbolGraphic"/>
@@ -196,7 +185,6 @@
 
     <!-- 2. PAINEL PRINCIPAL -->
     <div id="main-app" class="hidden">
-        <!-- Cabeçalho com o layout da Imagem de Capa -->
         <header class="app-header-banner">
             <div class="app-header-left">
                 <div class="app-header-logo">
@@ -216,7 +204,6 @@
         </header>
 
         <main class="main-container">
-            <!-- Barra de Ações -->
             <div class="action-bar">
                 <button class="btn-action primary" id="btnSalvar" onclick="salvarFirebase()">Salvar alterações</button>
                 <button class="btn-action" onclick="exportarCsv()">Exportar (CSV)</button>
@@ -224,9 +211,7 @@
                 <span class="status-badge" id="statusText">Modo online: Sincronizado em tempo real</span>
             </div>
 
-            <!-- Filtros em Pilulas -->
             <div class="filter-section">
-                <!-- Modo -->
                 <div class="filter-row">
                     <span class="filter-label">Modo</span>
                     <button class="pill active-gold" id="btnModoFreq" onclick="setModo('FREQUENCIA')">FREQUÊNCIA DIÁRIA</button>
@@ -234,12 +219,10 @@
                     <button class="pill" id="btnModoProf" onclick="setModo('PROFESSORES')">ATENDIMENTO MENSAL</button>
                 </div>
 
-                <!-- Ano Letivo -->
                 <div class="filter-row" id="anoContainer">
                     <span class="filter-label">Ano letivo</span>
                 </div>
 
-                <!-- Área -->
                 <div class="filter-row" id="areaContainer">
                     <span class="filter-label">Área</span>
                     <button class="pill active-green" onclick="setArea(this, 'LINGUAGENS')">LINGUAGENS</button>
@@ -249,18 +232,15 @@
                     <button class="pill" onclick="setArea(this, 'MULTIMEIOS')">MULTIMEIOS</button>
                 </div>
 
-                <!-- Mês -->
                 <div class="filter-row" id="mesContainer">
                     <span class="filter-label">Mês</span>
                 </div>
 
-                <!-- Dia -->
                 <div class="filter-row" id="diaContainer">
                     <span class="filter-label">Dia</span>
                 </div>
             </div>
 
-            <!-- Resumo da Seleção -->
             <div class="summary-card">
                 <div class="summary-title" id="summaryTitle">FREQUÊNCIA DIÁRIA: LINGUAGENS — SETEMBRO — DIA 22 — 2026</div>
                 <div class="summary-details">
@@ -270,15 +250,10 @@
                 </div>
             </div>
 
-            <!-- Tabela Principal -->
             <div class="table-container">
                 <table id="mainTable">
-                    <thead id="tableHeader">
-                        <!-- Gerado dinamicamente via JS -->
-                    </thead>
-                    <tbody id="tableBody">
-                        <!-- Gerado dinamicamente via JS -->
-                    </tbody>
+                    <thead id="tableHeader"></thead>
+                    <tbody id="tableBody"></tbody>
                 </table>
             </div>
         </main>
@@ -307,10 +282,12 @@
         let selDia = "22";
         let refListener = null;
         let senhaAtendimentoAutorizada = false;
+        
+        // BANCO DE DADOS DE DICAS (AUTOPREENCHIMENTO)
+        let mapaAlunosAutoFill = {};
 
         const MESES = ["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
 
-        // INICIALIZAÇÃO DA PÁGINA
         window.addEventListener('DOMContentLoaded', () => {
             renderFiltros();
             
@@ -327,9 +304,7 @@
             document.getElementById('login-screen').classList.remove('hidden');
         }
 
-        // ALTERNAR ENTRE OS MODOS (FREQUÊNCIA DIÁRIA, ESTUDANTES e ATENDIMENTO MENSAL)
         function setModo(m) {
-            // Verificação de Senha para Atendimento Mensal
             if (m === 'PROFESSORES' && !senhaAtendimentoAutorizada) {
                 const pass = prompt("Digite a senha de acesso da Direção para visualizar o Atendimento Mensal:");
                 if (pass === "Direcao23231939") {
@@ -374,9 +349,7 @@
             conectarFirebaseEOuvir();
         }
 
-        // RENDERIZAR NAVEGAÇÃO DE FILTROS
         function renderFiltros() {
-            // Anos (2026 - 2049)
             const anoCont = document.getElementById('anoContainer');
             for(let a = 2026; a <= 2049; a++) {
                 const btn = document.createElement('button');
@@ -392,7 +365,6 @@
                 anoCont.appendChild(btn);
             }
 
-            // Meses
             const mesCont = document.getElementById('mesContainer');
             MESES.forEach(m => {
                 const btn = document.createElement('button');
@@ -408,7 +380,6 @@
                 mesCont.appendChild(btn);
             });
 
-            // Dias (01 - 30)
             const diaCont = document.getElementById('diaContainer');
             for(let d = 1; d <= 30; d++) {
                 const dStr = String(d).padStart(2, '0');
@@ -445,7 +416,6 @@
             document.getElementById('summaryArea').innerText = selArea;
         }
 
-        // MONTA O CABEÇALHO DA TABELA DEPENDENDO DA ABA
         function renderEstruturaTabela() {
             const thead = document.getElementById('tableHeader');
             thead.innerHTML = '';
@@ -465,7 +435,6 @@
                 `;
                 renderTabelaFreqVazia();
             } else if(selModo === 'ESTUDANTES') {
-                // Modo ESTUDANTES (Histórico Mês a Mês + Matrícula)
                 thead.innerHTML = `
                     <tr>
                         <th>ORD.</th>
@@ -483,7 +452,6 @@
                     </tr>
                 `;
             } else if(selModo === 'PROFESSORES') {
-                // Modo ATENDIMENTO MENSAL POR PROFESSOR
                 thead.innerHTML = `
                     <tr>
                         <th>ORD.</th>
@@ -504,7 +472,7 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="ord-col">${i}</td>
-                    <td><input type="text" class="cell-input" id="estudante_${i}" onchange="autoSalvar()"></td>
+                    <td><input type="text" class="cell-input" id="estudante_${i}" list="dlEstudantes" oninput="testarAutoPreenchimento(${i})" onchange="autoSalvar()"></td>
                     <td><input type="text" class="cell-input" id="mat_${i}" onchange="autoSalvar()"></td>
                     <td><input type="text" class="cell-input" id="nivel_${i}" onchange="autoSalvar()"></td>
                     <td><input type="text" class="cell-input" id="componente_${i}" onchange="autoSalvar()"></td>
@@ -516,9 +484,67 @@
             }
         }
 
-        // CONEXÃO E LEITURA EM TEMPO REAL NO FIREBASE
+        // LÓGICA DE DICAS E PREENCHIMENTO AUTOMÁTICO
+        function testarAutoPreenchimento(i) {
+            const valInput = document.getElementById(`estudante_${i}`).value.trim().toUpperCase();
+            if (!valInput) return;
+
+            const alunoInfo = mapaAlunosAutoFill[valInput];
+            if (alunoInfo) {
+                if (alunoInfo.mat) document.getElementById(`mat_${i}`).value = alunoInfo.mat;
+                if (alunoInfo.nivel) document.getElementById(`nivel_${i}`).value = alunoInfo.nivel;
+                if (alunoInfo.componente) document.getElementById(`componente_${i}`).value = alunoInfo.componente;
+                if (alunoInfo.professor) document.getElementById(`professor_${i}`).value = alunoInfo.professor;
+                autoSalvar();
+            }
+        }
+
+        function atualizarDatalistSugestoes() {
+            const dl = document.getElementById('dlEstudantes');
+            dl.innerHTML = '';
+            Object.keys(mapaAlunosAutoFill).forEach(nomeChave => {
+                const obj = mapaAlunosAutoFill[nomeChave];
+                const opt = document.createElement('option');
+                opt.value = obj.estudante;
+                dl.appendChild(opt);
+            });
+        }
+
+        function carregarAutoFillDoAno() {
+            db.ref(`frequencias/${selAno}`).once('value', (snapshot) => {
+                const dadosAno = snapshot.val() || {};
+                mapaAlunosAutoFill = {};
+
+                Object.keys(dadosAno).forEach(mes => {
+                    const mesDados = dadosAno[mes] || {};
+                    Object.keys(mesDados).forEach(dia => {
+                        const diaDados = mesDados[dia] || {};
+                        Object.keys(diaDados).forEach(areaKey => {
+                            const areaDados = diaDados[areaKey] || {};
+                            Object.keys(areaDados).forEach(rk => {
+                                const reg = areaDados[rk];
+                                if (reg && reg.estudante && reg.estudante.trim() !== "") {
+                                    const chave = reg.estudante.trim().toUpperCase();
+                                    mapaAlunosAutoFill[chave] = {
+                                        estudante: reg.estudante,
+                                        mat: reg.mat || '',
+                                        nivel: reg.nivel || '',
+                                        componente: reg.componente || '',
+                                        professor: reg.professor || ''
+                                    };
+                                }
+                            });
+                        });
+                    });
+                });
+                atualizarDatalistSugestoes();
+            });
+        }
+
         function conectarFirebaseEOuvir() {
             const areaKey = selArea.replace(/[^a-zA-Z0-9]/g, "_");
+
+            carregarAutoFillDoAno();
 
             if(refListener) {
                 refListener.off();
@@ -532,7 +558,6 @@
                     preencherTabelaFreq(dados);
                 });
             } else {
-                // MODO ESTUDANTES e PROFESSORES: Ouve todas as frequências do Ano selecionado
                 const caminhoAno = `frequencias/${selAno}`;
                 refListener = db.ref(caminhoAno);
                 refListener.on('value', (snapshot) => {
@@ -577,14 +602,12 @@
             document.getElementById('cntPreenchidos').innerText = cntPreench;
         }
 
-        // PROCESSA O RELATÓRIO DE ESTUDANTES (Diferenciando por Nome + Matrícula)
         function processarEExibirRelatorioEstudantes(dadosAno, areaKey) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
 
             const mapaEstudantes = {};
 
-            // Varre Mês -> Dia -> Área
             Object.keys(dadosAno).forEach(mesNome => {
                 const mesIndex = MESES.indexOf(mesNome);
                 if(mesIndex === -1) return;
@@ -601,7 +624,6 @@
                         const nomeNorm = reg.estudante.trim().toUpperCase();
                         const matNorm = reg.mat ? reg.mat.trim().toUpperCase() : "SEM_MAT";
 
-                        // Diferencia alunos com mesmo nome se a matrícula for diferente
                         const chaveAluno = `${nomeNorm}___${matNorm}`;
 
                         if(!mapaEstudantes[chaveAluno]) {
@@ -698,7 +720,6 @@
             document.getElementById('cntPreenchidos').innerText = totalPreenchidos;
         }
 
-        // PROCESSA O RELATÓRIO DE ATENDIMENTOS POR PROFESSOR
         function processarEExibirRelatorioProfessores(dadosAno, areaKey) {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
@@ -718,7 +739,6 @@
                         const reg = areaDados[rowKey];
                         if(!reg || !reg.professor || reg.professor.trim() === "") return;
 
-                        // Contabiliza atendimento do professor quando a frequência do aluno é marcada
                         if(reg.frequencia) {
                             const chaveProf = reg.professor.trim().toUpperCase();
 
@@ -822,7 +842,6 @@
             });
         }
 
-        // EXPORTAR CSV
         function exportarCsv() {
             let csv = "";
             if(selModo === 'FREQUENCIA') {
@@ -839,7 +858,6 @@
                     csv += `${i};"${est}";"${mat}";"${niv}";"${comp}";"${prof}";"${ated}";"${freq}"\n`;
                 }
             } else {
-                // Exporta linhas da tabela visível (Estudantes ou Atendimento Mensal)
                 const trs = document.querySelectorAll('#tableBody tr');
                 trs.forEach((tr) => {
                     const tds = Array.from(tr.children).map(td => `"${td.innerText.replace(/"/g, '""')}"`);
