@@ -280,7 +280,14 @@
         let refListener = null;
         let senhaAtendimentoAutorizada = false;
         
-        let listaAlunosSugestao = [];
+        // Listas independentes para o autocompletar inline de cada campo
+        let listasSugestao = {
+            estudante: [],
+            mat: [],
+            nivel: [],
+            componente: [],
+            professor: []
+        };
 
         const MESES = ["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
 
@@ -468,11 +475,11 @@
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
                     <td class="ord-col">${i}</td>
-                    <td><input type="text" class="cell-input" id="estudante_${i}" oninput="handleEstudanteInput(event, ${i})" onchange="autoSalvar()"></td>
-                    <td><input type="text" class="cell-input" id="mat_${i}" onchange="autoSalvar()"></td>
-                    <td><input type="text" class="cell-input" id="nivel_${i}" onchange="autoSalvar()"></td>
-                    <td><input type="text" class="cell-input" id="componente_${i}" onchange="autoSalvar()"></td>
-                    <td><input type="text" class="cell-input" id="professor_${i}" onchange="autoSalvar()"></td>
+                    <td><input type="text" class="cell-input" id="estudante_${i}" oninput="handleInlineAutocomplete(event, 'estudante')" onchange="autoSalvar()"></td>
+                    <td><input type="text" class="cell-input" id="mat_${i}" oninput="handleInlineAutocomplete(event, 'mat')" onchange="autoSalvar()"></td>
+                    <td><input type="text" class="cell-input" id="nivel_${i}" oninput="handleInlineAutocomplete(event, 'nivel')" onchange="autoSalvar()"></td>
+                    <td><input type="text" class="cell-input" id="componente_${i}" oninput="handleInlineAutocomplete(event, 'componente')" onchange="autoSalvar()"></td>
+                    <td><input type="text" class="cell-input" id="professor_${i}" oninput="handleInlineAutocomplete(event, 'professor')" onchange="autoSalvar()"></td>
                     <td><input type="text" class="cell-input" id="atendimento_${i}" onchange="autoSalvar()"></td>
                     <td class="freq-col"><input type="checkbox" class="freq-check" id="freq_${i}" onchange="autoSalvar()"></td>
                 `;
@@ -480,8 +487,8 @@
             }
         }
 
-        // AUTOCOMPLETAR INLINE DIRETAMENTE NA CÉLULA (IGUAL À SUA IMAGEM)
-        function handleEstudanteInput(e, idx) {
+        // AUTOCOMPLETAR INLINE SEMI-AUTOMÁTICO INDEPENDENTE PARA CADA CAMPO
+        function handleInlineAutocomplete(e, fieldName) {
             const input = e.target;
             const typedVal = input.value;
 
@@ -493,32 +500,34 @@
             if (!typedVal || typedVal.trim() === '') return;
 
             const query = typedVal.toUpperCase();
+            const lista = listasSugestao[fieldName] || [];
 
-            // Busca aluno na base cujo nome comece com o texto digitado
-            const match = listaAlunosSugestao.find(a => a.estudante.toUpperCase().startsWith(query));
+            // Busca sugestão histórica que comece com o texto digitado
+            const match = lista.find(item => item.toUpperCase().startsWith(query));
 
             if (match) {
-                const fullText = match.estudante;
+                const fullText = match;
                 const typedLength = typedVal.length;
 
-                // Define o valor completo na célula
+                // Preenche o texto na célula
                 input.value = fullText;
 
-                // Seleciona/Destaca em azul apenas a parte sugerida (igual à foto)
+                // Seleciona/Destaca em azul apenas o trecho sugerido
                 input.setSelectionRange(typedLength, fullText.length);
-
-                // Preenche os dados correspondentes nas outras células da mesma linha
-                if (match.mat) document.getElementById(`mat_${idx}`).value = match.mat;
-                if (match.nivel) document.getElementById(`nivel_${idx}`).value = match.nivel;
-                if (match.componente) document.getElementById(`componente_${idx}`).value = match.componente;
-                if (match.professor) document.getElementById(`professor_${idx}`).value = match.professor;
             }
         }
 
         function carregarBaseAlunosSugestao() {
             db.ref(`frequencias/${selAno}`).once('value', (snapshot) => {
                 const dadosAno = snapshot.val() || {};
-                const mapaUnico = {};
+                
+                const sets = {
+                    estudante: new Set(),
+                    mat: new Set(),
+                    nivel: new Set(),
+                    componente: new Set(),
+                    professor: new Set()
+                };
 
                 Object.keys(dadosAno).forEach(mes => {
                     const mesDados = dadosAno[mes] || {};
@@ -528,22 +537,25 @@
                             const areaDados = diaDados[areaKey] || {};
                             Object.keys(areaDados).forEach(rk => {
                                 const reg = areaDados[rk];
-                                if (reg && reg.estudante && reg.estudante.trim() !== "") {
-                                    const chave = `${reg.estudante.trim().toUpperCase()}___${reg.mat ? reg.mat.trim().toUpperCase() : ''}`;
-                                    mapaUnico[chave] = {
-                                        estudante: reg.estudante,
-                                        mat: reg.mat || '',
-                                        nivel: reg.nivel || '',
-                                        componente: reg.componente || '',
-                                        professor: reg.professor || ''
-                                    };
+                                if (reg) {
+                                    if (reg.estudante && reg.estudante.trim()) sets.estudante.add(reg.estudante.trim());
+                                    if (reg.mat && reg.mat.trim()) sets.mat.add(reg.mat.trim());
+                                    if (reg.nivel && reg.nivel.trim()) sets.nivel.add(reg.nivel.trim());
+                                    if (reg.componente && reg.componente.trim()) sets.componente.add(reg.componente.trim());
+                                    if (reg.professor && reg.professor.trim()) sets.professor.add(reg.professor.trim());
                                 }
                             });
                         });
                     });
                 });
-                
-                listaAlunosSugestao = Object.values(mapaUnico);
+
+                listasSugestao = {
+                    estudante: Array.from(sets.estudante),
+                    mat: Array.from(sets.mat),
+                    nivel: Array.from(sets.nivel),
+                    componente: Array.from(sets.componente),
+                    professor: Array.from(sets.professor)
+                };
             });
         }
 
