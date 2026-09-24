@@ -31,6 +31,7 @@
             --green-light: #15803d;
             --yellow-gold: #ca8a04;
             --red-alert: #dc2626;
+            --blue-concluido: #2563eb;
             --gray-bg: #f8fafc;
             --border-color: #cbd5e1;
         }
@@ -143,6 +144,12 @@
             box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2);
         }
 
+        .situacao-card.selected-concludente {
+            border-color: #2563eb;
+            background: #eff6ff;
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.2);
+        }
+
         .situacao-circle { font-size: 2rem; line-height: 1; margin-bottom: 6px; }
         .situacao-name { font-size: 0.9rem; font-weight: bold; color: #1e293b; letter-spacing: 0.5px; }
         .situacao-subtext { font-size: 0.72rem; color: #64748b; margin-top: 2px; font-style: italic; }
@@ -192,7 +199,7 @@
         .summary-title { font-size: 1rem; font-weight: bold; color: var(--green-dark); margin-bottom: 4px; text-transform: uppercase; }
         .summary-details { font-size: 0.85rem; color: #166534; display: flex; gap: 20px; flex-wrap: wrap; }
 
-        /* TABELA DE FREQUÊNCIA E ESTUDANTES - OTIMIZADA PARA CELULAR */
+        /* TABELA DE FREQUÊNCIA E ESTUDANTES */
         .table-container { background: white; border-radius: 6px; border: 1px solid var(--border-color); overflow-x: auto; box-shadow: 0 2px 5px rgba(0,0,0,0.05); -webkit-overflow-scrolling: touch; }
         table { width: 100%; border-collapse: collapse; font-size: 0.88rem; }
         th { background-color: var(--green-dark); color: white; padding: 10px 8px; text-align: center; font-weight: bold; font-size: 0.82rem; border: 1px solid #084229; text-transform: uppercase; white-space: nowrap; }
@@ -201,7 +208,6 @@
         td.ord-col { font-weight: bold; width: 45px; background: #f8fafc; }
         td.align-left { text-align: left; }
 
-        /* AJUSTE DOS INPUTS DENTRO DA TABELA PARA EVITAR ROLAGEM INDESEJADA */
         input.cell-input { 
             width: 100%; 
             padding: 6px 8px; 
@@ -358,6 +364,13 @@
                         <span class="situacao-subtext">60 dias ou mais</span>
                         <span class="situacao-badge" id="badgeEvadido">0 alunos</span>
                     </div>
+
+                    <div class="situacao-card" id="cardConcludente" onclick="setFiltroSituacao('CONCLUDENTE')">
+                        <span class="situacao-circle">🔵</span>
+                        <span class="situacao-name">CONCLUDENTES</span>
+                        <span class="situacao-subtext">Alunos que concluíram</span>
+                        <span class="situacao-badge" id="badgeConcludente">0 alunos</span>
+                    </div>
                 </div>
 
                 <!-- SELETOR DE ANO LETIVO -->
@@ -475,8 +488,12 @@
         let selDia = String(hojeAtual.getDate()).padStart(2, '0');
         let selSituacaoFiltro = "ATIVO";
         let refListener = null;
+        let refListenerSit = null;
         let senhaAtendimentoAutorizada = false;
         
+        let situacaoAlunosCache = {}; // ARMAZENA CONCLUDENTES E SUAS DATAS
+        let dadosAnoCacheFreq = {};  // CACHE DE FREQUÊNCIAS PARA RERENDERIZAÇÃO RÁPIDA
+
         let listasSugestao = {
             estudante: [],
             mat: [],
@@ -556,7 +573,7 @@
                 mesCont.style.display = 'none';
                 diaCont.style.display = 'none';
                 areaCont.style.display = 'flex';
-                btnSalvar.style.display = 'none';
+                btnSalvar.style.display = 'inline-block'; // BOTÃO DE SALVAR ALTERAÇÕES ATIVADO
                 sitCards.classList.remove('hidden');
             } else if(m === 'PROFESSORES') {
                 btnProf.classList.add('active-gold');
@@ -577,15 +594,20 @@
             const cardAtivo = document.getElementById('cardAtivo');
             const cardPre = document.getElementById('cardPreEvadido');
             const cardEvadido = document.getElementById('cardEvadido');
+            const cardConcludente = document.getElementById('cardConcludente');
 
             cardAtivo.classList.remove('selected-ativo');
             cardPre.classList.remove('selected-pre');
             cardEvadido.classList.remove('selected-evadido');
+            cardConcludente.classList.remove('selected-concludente');
 
             if(status === 'ATIVO') cardAtivo.classList.add('selected-ativo');
             if(status === 'PRE_EVADIDO') cardPre.classList.add('selected-pre');
             if(status === 'EVADIDO') cardEvadido.classList.add('selected-evadido');
+            if(status === 'CONCLUDENTE') cardConcludente.classList.add('selected-concludente');
 
+            atualizarHeader();
+            renderEstruturaTabela();
             conectarFirebaseEOuvir();
         }
 
@@ -680,7 +702,7 @@
                 document.getElementById('summaryTitle').innerText = `LISTA GERAL DE ESTUDANTES — ${selAno}`;
                 document.getElementById('summaryArea').innerText = "TODAS AS ÁREAS";
             } else if(selModo === 'SITUACAO') {
-                let rotulo = selSituacaoFiltro === 'ATIVO' ? 'ATIVOS (🟢)' : (selSituacaoFiltro === 'PRE_EVADIDO' ? 'PRÉ-EVADIDOS (🟡)' : 'EVADIDOS (🔴)');
+                let rotulo = selSituacaoFiltro === 'ATIVO' ? 'ATIVOS (🟢)' : (selSituacaoFiltro === 'PRE_EVADIDO' ? 'PRÉ-EVADIDOS (🟡)' : (selSituacaoFiltro === 'EVADIDO' ? 'EVADIDOS (🔴)' : 'CONCLUDENTES (🔵)'));
                 document.getElementById('summaryTitle').innerText = `SITUAÇÃO DO ESTUDANTE [${rotulo}]: ${selArea} — ${selAno}`;
                 document.getElementById('summaryArea').innerText = selArea;
             } else {
@@ -718,19 +740,32 @@
                     </tr>
                 `;
             } else if(selModo === 'SITUACAO') {
-                thead.innerHTML = `
-                    <tr>
-                        <th style="min-width:45px;">ORD.</th>
-                        <th style="min-width:60px;">STATUS</th>
-                        <th style="min-width:260px;">ESTUDANTE</th>
-                        <th style="min-width:150px;">NÚMERO DE MATRÍCULA</th>
-                        <th style="min-width:200px;">SITUAÇÃO DA FREQUÊNCIA</th>
-                        <th style="min-width:150px;">ÚLTIMA FREQUÊNCIA</th>
-                        <th style="min-width:140px;">DIAS DECORRIDOS</th>
-                        <th style="min-width:220px;">ÚLTIMA AVALIAÇÃO / COMPONENTE</th>
-                        <th style="min-width:200px;">PROFESSOR(A) DO ÚLTIMO ATENDIMENTO</th>
-                    </tr>
-                `;
+                if(selSituacaoFiltro === 'CONCLUDENTE') {
+                    thead.innerHTML = `
+                        <tr>
+                            <th style="min-width:45px;">ORD.</th>
+                            <th style="min-width:60px;">STATUS</th>
+                            <th style="min-width:260px;">NOME DO ESTUDANTE</th>
+                            <th style="min-width:160px;">NÚMERO DE MATRÍCULA</th>
+                            <th style="min-width:160px;">DATA DA CONCLUSÃO</th>
+                            <th style="min-width:110px;">CONCLUSÃO</th>
+                        </tr>
+                    `;
+                } else {
+                    thead.innerHTML = `
+                        <tr>
+                            <th style="min-width:45px;">ORD.</th>
+                            <th style="min-width:60px;">STATUS</th>
+                            <th style="min-width:260px;">ESTUDANTE</th>
+                            <th style="min-width:150px;">NÚMERO DE MATRÍCULA</th>
+                            <th style="min-width:200px;">SITUAÇÃO DA FREQUÊNCIA</th>
+                            <th style="min-width:150px;">ÚLTIMA FREQUÊNCIA</th>
+                            <th style="min-width:140px;">DIAS DECORRIDOS</th>
+                            <th style="min-width:160px;">DATA DA CONCLUSÃO</th>
+                            <th style="min-width:110px;">CONCLUSÃO</th>
+                        </tr>
+                    `;
+                }
             } else if(selModo === 'PROFESSORES') {
                 thead.innerHTML = `
                     <tr>
@@ -748,7 +783,6 @@
         function renderTabelaFreqVazia() {
             const tbody = document.getElementById('tableBody');
             tbody.innerHTML = '';
-            // ALTERADO PARA 60 ATENDIMENTOS
             for(let i = 1; i <= 60; i++) {
                 const tr = document.createElement('tr');
                 tr.innerHTML = `
@@ -769,7 +803,6 @@
             input.scrollLeft = 0;
         }
 
-        // AUTOCOMPLETAR SEM ROLAR O CAMPO INDESEJADAMENTE
         function handleInlineAutocomplete(e, fieldName) {
             const input = e.target;
             const typedVal = input.value;
@@ -787,7 +820,6 @@
                 input.value = fullText;
                 input.setSelectionRange(typedLength, fullText.length);
                 
-                // MANTÉM O INÍCIO DO TEXTO VISÍVEL NO CELULAR
                 requestAnimationFrame(() => {
                     input.scrollLeft = 0;
                 });
@@ -841,9 +873,8 @@
 
             carregarBaseAlunosSugestao();
 
-            if(refListener) {
-                refListener.off();
-            }
+            if(refListener) refListener.off();
+            if(refListenerSit) refListenerSit.off();
 
             if(selModo === 'FREQUENCIA') {
                 const caminho = `frequencias/${selAno}/${selMes}/${selDia}/${areaKey}`;
@@ -852,6 +883,18 @@
                     const dados = snapshot.val() || {};
                     preencherTabelaFreq(dados);
                 });
+            } else if(selModo === 'SITUACAO') {
+                const caminhoAno = `frequencias/${selAno}`;
+                const caminhoSit = `situacaoAlunos/${selAno}/${areaKey}`;
+
+                refListenerSit = db.ref(caminhoSit);
+                refListenerSit.on('value', (sitSnap) => {
+                    situacaoAlunosCache = sitSnap.val() || {};
+                    db.ref(caminhoAno).once('value', (freqSnap) => {
+                        dadosAnoCacheFreq = freqSnap.val() || {};
+                        processarEExibirRelatorioSituacao(dadosAnoCacheFreq, areaKey);
+                    });
+                });
             } else {
                 const caminhoAno = `frequencias/${selAno}`;
                 refListener = db.ref(caminhoAno);
@@ -859,8 +902,6 @@
                     const dadosAno = snapshot.val() || {};
                     if(selModo === 'ESTUDANTES') {
                         processarEExibirRelatorioEstudantes(dadosAno);
-                    } else if(selModo === 'SITUACAO') {
-                        processarEExibirRelatorioSituacao(dadosAno, areaKey);
                     } else if(selModo === 'PROFESSORES') {
                         processarEExibirRelatorioProfessores(dadosAno, areaKey);
                     }
@@ -872,7 +913,6 @@
             let cntAtend = 0;
             let cntPreench = 0;
 
-            // ALTERADO PARA 60 ATENDIMENTOS
             for(let i = 1; i <= 60; i++) {
                 const row = dados[i] || {};
                 
@@ -997,13 +1037,14 @@
 
                         const nomeNorm = reg.estudante.trim().toUpperCase();
                         const matNorm = reg.mat ? reg.mat.trim().toUpperCase() : "SEM_MAT";
-
                         const chaveAluno = `${nomeNorm}___${matNorm}`;
+                        const chaveSanitizada = chaveAluno.replace(/[.#$/[\]]/g, "_");
 
                         if(!mapaEstudantes[chaveAluno]) {
                             mapaEstudantes[chaveAluno] = {
-                                nome: reg.estudante,
-                                matricula: reg.mat && reg.mat.trim() !== "" ? reg.mat : "-",
+                                chaveSanitizada: chaveSanitizada,
+                                nome: reg.estudante.trim(),
+                                matricula: reg.mat && reg.mat.trim() !== "" ? reg.mat.trim() : "-",
                                 ultimaDataObj: null,
                                 ultimaDataStr: '-',
                                 ultimaAvaliacao: '-',
@@ -1015,7 +1056,7 @@
                             const dataCorr = new Date(parseInt(selAno), mesIndex, parseInt(diaNome));
                             if(!mapaEstudantes[chaveAluno].ultimaDataObj || dataCorr > mapaEstudantes[chaveAluno].ultimaDataObj) {
                                 mapaEstudantes[chaveAluno].ultimaDataObj = dataCorr;
-                                mapaEstudantes[chaveAluno].ultimaDataStr = `${diaNome}/${String(mesIndex + 1).padStart(2, '0')}/${selAno}`;
+                                mapaEstudantes[chaveAluno].ultimaDataStr = `${diaNome.padStart(2, '0')}/${String(mesIndex + 1).padStart(2, '0')}/${selAno}`;
                                 if(reg.componente || reg.atendimento) {
                                     mapaEstudantes[chaveAluno].ultimaAvaliacao = reg.componente || reg.atendimento;
                                 }
@@ -1028,78 +1069,162 @@
                 });
             });
 
+            // INCLUI ALUNOS SALVOS COMO CONCLUDENTES QUE TALVEZ NÃO ESTEJAM NA FREQUÊNCIA ATUAL
+            Object.keys(situacaoAlunosCache).forEach(keySan => {
+                const sitObj = situacaoAlunosCache[keySan];
+                if(sitObj && sitObj.concluido) {
+                    const existe = Object.values(mapaEstudantes).some(a => a.chaveSanitizada === keySan);
+                    if(!existe) {
+                        mapaEstudantes[keySan] = {
+                            chaveSanitizada: keySan,
+                            nome: sitObj.nome || "ESTUDANTE",
+                            matricula: sitObj.mat || "-",
+                            ultimaDataObj: null,
+                            ultimaDataStr: '-',
+                            ultimaAvaliacao: '-',
+                            ultimoProfessor: '-'
+                        };
+                    }
+                }
+            });
+
             const listaAlunos = Object.values(mapaEstudantes);
             const hoje = new Date();
 
             let countAtivo = 0;
             let countPre = 0;
             let countEvadido = 0;
+            let countConcludente = 0;
 
             const alunosAtivos = [];
             const alunosPre = [];
             const alunosEvadidos = [];
+            const alunosConcludentes = [];
 
             listaAlunos.forEach(aluno => {
-                let dias = 999;
-                if(aluno.ultimaDataObj) {
-                    const diffTime = Math.abs(hoje - aluno.ultimaDataObj);
-                    dias = Math.floor(diffTime / (1000 * 60 * 60 * 24));
-                }
-                aluno.diasDecorridos = dias;
+                const sitData = situacaoAlunosCache[aluno.chaveSanitizada];
+                aluno.concluido = !!(sitData && sitData.concluido);
+                aluno.dataConclusao = (sitData && sitData.dataConclusao) ? sitData.dataConclusao : '';
 
-                if(dias <= 30) {
-                    aluno.categoria = 'ATIVO';
-                    aluno.bola = '🟢';
-                    aluno.categoriaNome = 'ATIVO (Até 30 dias)';
-                    countAtivo++;
-                    alunosAtivos.push(aluno);
-                } else if(dias >= 31 && dias <= 59) {
-                    aluno.categoria = 'PRE_EVADIDO';
-                    aluno.bola = '🟡';
-                    aluno.categoriaNome = 'PRÉ-EVADIDO (31 a 59 dias)';
-                    countPre++;
-                    alunosPre.push(aluno);
+                if(aluno.concluido) {
+                    aluno.categoria = 'CONCLUDENTE';
+                    aluno.bola = '🔵';
+                    aluno.categoriaNome = 'CONCLUDENTE';
+                    countConcludente++;
+                    alunosConcludentes.push(aluno);
                 } else {
-                    aluno.categoria = 'EVADIDO';
-                    aluno.bola = '🔴';
-                    aluno.categoriaNome = 'EVADIDO (60 dias ou mais)';
-                    countEvadido++;
-                    alunosEvadidos.push(aluno);
+                    let dias = 999;
+                    if(aluno.ultimaDataObj) {
+                        const diffTime = Math.abs(hoje - aluno.ultimaDataObj);
+                        dias = Math.floor(diffTime / (1000 * 60 * 60 * 24));
+                    }
+                    aluno.diasDecorridos = dias;
+
+                    if(dias <= 30) {
+                        aluno.categoria = 'ATIVO';
+                        aluno.bola = '🟢';
+                        aluno.categoriaNome = 'ATIVO (Até 30 dias)';
+                        countAtivo++;
+                        alunosAtivos.push(aluno);
+                    } else if(dias >= 31 && dias <= 59) {
+                        aluno.categoria = 'PRE_EVADIDO';
+                        aluno.bola = '🟡';
+                        aluno.categoriaNome = 'PRÉ-EVADIDO (31 a 59 dias)';
+                        countPre++;
+                        alunosPre.push(aluno);
+                    } else {
+                        aluno.categoria = 'EVADIDO';
+                        aluno.bola = '🔴';
+                        aluno.categoriaNome = 'EVADIDO (60 dias ou mais)';
+                        countEvadido++;
+                        alunosEvadidos.push(aluno);
+                    }
                 }
             });
 
             document.getElementById('badgeAtivo').innerText = `${countAtivo} alunos`;
             document.getElementById('badgePreEvadido').innerText = `${countPre} alunos`;
             document.getElementById('badgeEvadido').innerText = `${countEvadido} alunos`;
+            document.getElementById('badgeConcludente').innerText = `${countConcludente} alunos`;
 
             let listaExibir = [];
             if(selSituacaoFiltro === 'ATIVO') listaExibir = alunosAtivos;
             else if(selSituacaoFiltro === 'PRE_EVADIDO') listaExibir = alunosPre;
             else if(selSituacaoFiltro === 'EVADIDO') listaExibir = alunosEvadidos;
+            else if(selSituacaoFiltro === 'CONCLUDENTE') listaExibir = alunosConcludentes;
+
+            listaExibir.sort((a, b) => a.nome.localeCompare(b.nome));
 
             document.getElementById('cntAtendidos').innerText = listaExibir.length;
             document.getElementById('cntPreenchidos').innerText = listaAlunos.length;
 
             if(listaExibir.length === 0) {
-                tbody.innerHTML = `<tr><td colspan="9" class="no-data-msg">Nenhum aluno encontrado na situação selecionada para a área de ${selArea} em ${selAno}.</td></tr>`;
+                const cols = selSituacaoFiltro === 'CONCLUDENTE' ? 6 : 9;
+                tbody.innerHTML = `<tr><td colspan="${cols}" class="no-data-msg">Nenhum aluno encontrado no status selecionado para a área de ${selArea} em ${selAno}.</td></tr>`;
                 return;
             }
 
             listaExibir.forEach((aluno, idx) => {
                 const tr = document.createElement('tr');
-                tr.innerHTML = `
-                    <td class="ord-col">${idx + 1}</td>
-                    <td><span class="status-dot">${aluno.bola}</span></td>
-                    <td class="align-left" style="font-weight:600;">${aluno.nome}</td>
-                    <td style="font-weight:bold; color:#0b5736;">${aluno.matricula}</td>
-                    <td style="font-weight:bold;">${aluno.categoriaNome}</td>
-                    <td>${aluno.ultimaDataStr}</td>
-                    <td style="font-weight:bold;">${aluno.diasDecorridos !== 999 ? aluno.diasDecorridos + ' dias' : '-'}</td>
-                    <td>${aluno.ultimaAvaliacao}</td>
-                    <td>${aluno.ultimoProfessor}</td>
-                `;
+                if(selSituacaoFiltro === 'CONCLUDENTE') {
+                    tr.innerHTML = `
+                        <td class="ord-col">${idx + 1}</td>
+                        <td><span class="status-dot">🔵</span></td>
+                        <td class="align-left" style="font-weight:600;">${aluno.nome}</td>
+                        <td style="font-weight:bold; color:#0b5736;">${aluno.matricula}</td>
+                        <td><input type="text" class="cell-input" style="text-align:center;" placeholder="DD/MM/AAAA" value="${aluno.dataConclusao}" onchange="atualizarDataConclusao('${aluno.chaveSanitizada}', this.value)"></td>
+                        <td class="freq-col"><input type="checkbox" class="freq-check" checked onchange="toggleConclusao('${aluno.chaveSanitizada}', this.checked, '${aluno.nome.replace(/'/g, "\\'")}', '${aluno.matricula}')"></td>
+                    `;
+                } else {
+                    tr.innerHTML = `
+                        <td class="ord-col">${idx + 1}</td>
+                        <td><span class="status-dot">${aluno.bola}</span></td>
+                        <td class="align-left" style="font-weight:600;">${aluno.nome}</td>
+                        <td style="font-weight:bold; color:#0b5736;">${aluno.matricula}</td>
+                        <td style="font-weight:bold;">${aluno.categoriaNome}</td>
+                        <td>${aluno.ultimaDataStr}</td>
+                        <td style="font-weight:bold;">${aluno.diasDecorridos !== 999 ? aluno.diasDecorridos + ' dias' : '-'}</td>
+                        <td><input type="text" class="cell-input" style="text-align:center;" placeholder="DD/MM/AAAA" value="${aluno.dataConclusao}" onchange="atualizarDataConclusao('${aluno.chaveSanitizada}', this.value)"></td>
+                        <td class="freq-col"><input type="checkbox" class="freq-check" ${aluno.concluido ? 'checked' : ''} onchange="toggleConclusao('${aluno.chaveSanitizada}', this.checked, '${aluno.nome.replace(/'/g, "\\'")}', '${aluno.matricula}')"></td>
+                    `;
+                }
                 tbody.appendChild(tr);
             });
+        }
+
+        function toggleConclusao(chaveSanitizada, isChecked, nome = '', mat = '') {
+            if(!situacaoAlunosCache[chaveSanitizada]) {
+                situacaoAlunosCache[chaveSanitizada] = {
+                    nome: nome,
+                    mat: mat,
+                    concluido: false,
+                    dataConclusao: ''
+                };
+            }
+
+            situacaoAlunosCache[chaveSanitizada].concluido = isChecked;
+
+            if(isChecked && !situacaoAlunosCache[chaveSanitizada].dataConclusao) {
+                const hoje = new Date();
+                const dStr = String(hoje.getDate()).padStart(2, '0');
+                const mStr = String(hoje.getMonth() + 1).padStart(2, '0');
+                situacaoAlunosCache[chaveSanitizada].dataConclusao = `${dStr}/${mStr}/${hoje.getFullYear()}`;
+            }
+
+            const areaKey = selArea.replace(/[^a-zA-Z0-9]/g, "_");
+            processarEExibirRelatorioSituacao(dadosAnoCacheFreq, areaKey);
+        }
+
+        function atualizarDataConclusao(chaveSanitizada, dataStr) {
+            if(!situacaoAlunosCache[chaveSanitizada]) {
+                situacaoAlunosCache[chaveSanitizada] = {
+                    nome: '',
+                    mat: '',
+                    concluido: true,
+                    dataConclusao: ''
+                };
+            }
+            situacaoAlunosCache[chaveSanitizada].dataConclusao = dataStr;
         }
 
         function processarEExibirRelatorioProfessores(dadosAno, areaKey) {
@@ -1177,59 +1302,69 @@
         }
 
         function salvarFirebase(silencioso = false) {
-            if(selModo !== 'FREQUENCIA') return;
-
             const areaKey = selArea.replace(/[^a-zA-Z0-9]/g, "_");
-            const caminho = `frequencias/${selAno}/${selMes}/${selDia}/${areaKey}`;
-            
-            const payload = {};
-            let cntAtend = 0;
-            let cntPreench = 0;
 
-            // ALTERADO PARA 60 ATENDIMENTOS
-            for(let i = 1; i <= 60; i++) {
-                const est = document.getElementById(`estudante_${i}`).value;
-                const mat = document.getElementById(`mat_${i}`).value;
-                const niv = document.getElementById(`nivel_${i}`).value;
-                const comp = document.getElementById(`componente_${i}`).value;
-                const prof = document.getElementById(`professor_${i}`).value;
-                const ated = document.getElementById(`atendimento_${i}`).value;
-                const freq = document.getElementById(`freq_${i}`).checked;
+            if(selModo === 'FREQUENCIA') {
+                const caminho = `frequencias/${selAno}/${selMes}/${selDia}/${areaKey}`;
+                const payload = {};
+                let cntAtend = 0;
+                let cntPreench = 0;
 
-                if(est || mat || niv || comp || prof || ated || freq) {
-                    payload[i] = {
-                        ord: i,
-                        estudante: est,
-                        mat: mat,
-                        nivel: niv,
-                        componente: comp,
-                        professor: prof,
-                        atendimento: ated,
-                        frequencia: freq
-                    };
-                    cntPreench++;
-                    if(freq) cntAtend++;
-                }
-            }
+                for(let i = 1; i <= 60; i++) {
+                    const est = document.getElementById(`estudante_${i}`).value;
+                    const mat = document.getElementById(`mat_${i}`).value;
+                    const niv = document.getElementById(`nivel_${i}`).value;
+                    const comp = document.getElementById(`componente_${i}`).value;
+                    const prof = document.getElementById(`professor_${i}`).value;
+                    const ated = document.getElementById(`atendimento_${i}`).value;
+                    const freq = document.getElementById(`freq_${i}`).checked;
 
-            db.ref(caminho).set(payload, (error) => {
-                if(!error) {
-                    document.getElementById('cntAtendidos').innerText = cntAtend;
-                    document.getElementById('cntPreenchidos').innerText = cntPreench;
-                    if(!silencioso) {
-                        alert('Alterações salvas com sucesso!');
+                    if(est || mat || niv || comp || prof || ated || freq) {
+                        payload[i] = {
+                            ord: i,
+                            estudante: est,
+                            mat: mat,
+                            nivel: niv,
+                            componente: comp,
+                            professor: prof,
+                            atendimento: ated,
+                            frequencia: freq
+                        };
+                        cntPreench++;
+                        if(freq) cntAtend++;
                     }
-                } else {
-                    console.error("Erro ao salvar no Firebase:", error);
                 }
-            });
+
+                db.ref(caminho).set(payload, (error) => {
+                    if(!error) {
+                        document.getElementById('cntAtendidos').innerText = cntAtend;
+                        document.getElementById('cntPreenchidos').innerText = cntPreench;
+                        if(!silencioso) {
+                            alert('Frequência salva com sucesso!');
+                        }
+                    } else {
+                        console.error("Erro ao salvar no Firebase:", error);
+                    }
+                });
+            } else if(selModo === 'SITUACAO') {
+                const caminhoSit = `situacaoAlunos/${selAno}/${areaKey}`;
+                db.ref(caminhoSit).set(situacaoAlunosCache, (error) => {
+                    if(!error) {
+                        if(!silencioso) {
+                            alert('Situação dos estudantes salva com sucesso!');
+                        }
+                    } else {
+                        console.error("Erro ao salvar situação:", error);
+                        alert("Ocorreu um erro ao salvar as alterações da situação.");
+                    }
+                });
+            }
         }
 
         function exportarCsv() {
             let csv = "";
             if(selModo === 'FREQUENCIA') {
                 csv = "ORD.;ESTUDANTE;MAT.;NÍVEL;COMPONENTE CURRICULAR;PROFESSOR(A);ATENDIMENTO;FREQUÊNCIA\n";
-                // ALTERADO PARA 60 ATENDIMENTOS
                 for(let i = 1; i <= 60; i++) {
                     const est = document.getElementById(`estudante_${i}`).value;
                     const mat = document.getElementById(`mat_${i}`).value;
@@ -1244,7 +1379,14 @@
             } else {
                 const trs = document.querySelectorAll('#tableBody tr');
                 trs.forEach((tr) => {
-                    const tds = Array.from(tr.children).map(td => `"${td.innerText.replace(/"/g, '""')}"`);
+                    const tds = Array.from(tr.children).map(td => {
+                        const input = td.querySelector('input');
+                        if(input) {
+                            if(input.type === 'checkbox') return `"${input.checked ? 'SIM' : 'NÃO'}"`;
+                            return `"${input.value.replace(/"/g, '""')}"`;
+                        }
+                        return `"${td.innerText.replace(/"/g, '""')}"`;
+                    });
                     if(tds.length > 1) {
                         csv += tds.join(";") + "\n";
                     }
