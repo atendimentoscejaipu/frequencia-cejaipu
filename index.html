@@ -73,6 +73,9 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--g);cursor:pointer
 .scard{background:#fff;border:2px solid var(--bd);border-radius:12px;padding:10px 20px;min-width:150px;text-align:center;cursor:pointer}
 .scard.on{box-shadow:0 0 0 3px rgba(21,128,61,.25);border-color:var(--gl)}.scard b{display:block}.scard span{font-size:.75rem;color:#64748b;font-style:italic}
 .ib{border:none;background:none;cursor:pointer;font-size:1rem}
+table.ed th.tp{font-size:.68rem;max-width:92px;white-space:normal;line-height:1.15}
+table.ed td input.ci{min-width:70px}table.ed td input[data-f=estudante]{min-width:240px}table.ed select.ci{min-width:180px}
+.sit{white-space:nowrap;font-weight:600;font-size:.82rem}
 </style>
 </head>
 <body>
@@ -96,11 +99,13 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--g);cursor:pointer
       <label style="font-size:.82rem;color:#4b5563;display:flex;gap:8px;align-items:center;margin-bottom:14px"><input type="checkbox" id="keepSec" checked> Manter conectado neste aparelho</label>
       <button class="btn" onclick="entrarSec()">Entrar na Secretaria</button>
       <div class="err" id="errSec"></div>
-      <div class="box">
-        <h3>Ambientes dos Professores</h3>
-        <p class="hint" style="margin-bottom:8px">Cada professor(a) possui seu próprio ambiente, gerenciado pela Secretaria (aba “Professores”).</p>
-        <button class="btn alt" onclick="loginTab('prof')">Acessar ambiente do professor(a) →</button>
-      </div>
+      <details><summary>🔑 Criar nova senha da Secretaria</summary>
+        <div class="fg" style="margin-top:10px"><label>Senha atual</label><input type="password" id="ssAtual"></div>
+        <div class="fg"><label>Nova senha</label><input type="password" id="ssNova"></div>
+        <div class="fg"><label>Confirmar nova senha</label><input type="password" id="ssConf"></div>
+        <button class="btn sm" onclick="mudarSenhaSec()">Salvar nova senha</button>
+        <div class="err" id="errSenhaSec"></div>
+      </details>
     </div>
 
     <!-- AMBIENTE DO PROFESSOR -->
@@ -127,10 +132,10 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--g);cursor:pointer
   <header class="top">
     <div class="tl"><div class="hlogo"><img class="brasao" alt="Brasão"></div>
       <div><h1>CEJA DR. GERARDO CAMELO MADEIRA</h1><p>Sistema de Monitoramento de Frequência Diária / Atendimento — Secretaria</p></div></div>
-    <div class="us"><span>Conectado como <strong>Secretaria</strong></span><button onclick="sair()">Sair</button></div>
+    <div class="us"><span>Conectado como <strong>Secretaria</strong></span><button onclick="alterarSenhaSec()">Alterar senha</button><button onclick="sair()">Sair</button></div>
   </header>
   <main>
-    <div class="bar"><button class="btn sm" onclick="exportarCsv()">Exportar (CSV)</button><span class="badge">Modo online: Sincronizado em tempo real</span></div>
+    <div class="bar"><button class="btn sm" onclick="exportar('pdf')">📄 Exportar PDF</button><button class="btn sm alt" onclick="exportar('word')">📝 Exportar Word</button><span class="badge">Modo online: Sincronizado em tempo real</span></div>
     <div id="secBody"></div>
   </main>
 </div>
@@ -142,14 +147,14 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--g);cursor:pointer
       <div><h1>CEJA DR. GERARDO CAMELO MADEIRA</h1><p>Ambiente do Professor(a) — Atendimento Diário</p></div></div>
     <div class="us"><span id="profWho"></span><button id="btnVoltarSec" class="hidden" onclick="voltarSec()">← Secretaria</button><button onclick="alterarSenha()">Alterar senha</button><button onclick="sair()">Sair</button></div>
   </header>
-  <main>
+  <main id="profMain">
+    <div class="bar"><button class="btn sm" onclick="exportar('pdf')">📄 Exportar PDF</button><button class="btn sm alt" onclick="exportar('word')">📝 Exportar Word</button><span class="badge">Modo online: Sincronizado em tempo real</span></div>
     <div class="areaTag" id="profTag"></div>
     <div class="filters" id="profFilt"></div>
     <div class="sum"><div class="t">Atendimentos do dia <span id="profSalvo" style="font-weight:normal;font-size:.78rem;color:#047857;margin-left:10px"></span></div>
       <div id="profDia" class="chips"></div>
       <div class="t" style="margin-top:6px">Acumulado do mês</div><div id="profMes" class="chips"></div></div>
-    <div class="tc"><table><thead><tr><th>Ord.</th><th style="min-width:250px">Estudante</th><th style="min-width:110px">Mat.</th><th style="min-width:90px">Nível</th><th style="min-width:200px">Componente curricular</th><th style="min-width:230px">Atendimento</th><th>Presença</th><th></th></tr></thead><tbody id="profRows"></tbody></table></div>
-    <button class="btn sm" onclick="addLinha()">+ Adicionar linha</button>
+    <div id="profEd" class="edHost"></div>
   </main>
 </div>
 
@@ -162,6 +167,22 @@ document.getElementById('pwaManifest').href=URL.createObjectURL(new Blob([JSON.s
 firebase.initializeApp({apiKey:"AIzaSyCg7l7axov73nQU1qlIG3NBWw8SWrPFX4",authDomain:"atendimentos-ceja.firebaseapp.com",databaseURL:"https://atendimentos-ceja-default-rtdb.firebaseio.com",projectId:"atendimentos-ceja",storageBucket:"atendimentos-ceja.firebasestorage.app",messagingSenderId:"330609197724",appId:"1:330609197724:web:45b030f4c6f1cc5faf6359"});
 const db=firebase.database();
 
+const SEED=[['LINGUAGENS',['Francisco de Assis Martins Passos','Ana Gardênia Ximenes Dias','Maria Suely Rodrigues Araujo','Maria Siloneida de Farias','Marcília Felipe da Costa','José Airton Ferreira de Mesquita','Aline Dantas Moreira','Pedro Furtuna da Silva','Glaucia Paiva Timbó']],
+['CIÊNCIAS DA NATUREZA E MATEMÁTICA',['Ana Jéssica Martins Matos','Reinaldo Inacio Barbalho','Carlos Ely Costa Dias','Francisco José Bezerra Felizola','Maria Sueli Bernardo de Lima','Itala Futado Dias','Antonio Helio Pereira de Farias','Sabrina Farias Camelo']],
+['CIÊNCIAS HUMANAS',['Antonia Carla Victor de Paiva','Carliana Lima Almeida','Silvia Helena Peres Dias','Aldânia Maria de Melo Lima Soares']],
+['LEI',['Samuel Martins de Sousa']],
+['MULTIMEIOS',['Tatiana Maria de Aragão Paiva','Gonçalinha Rodrigues Martins']]];
+const slug=n=>'p_'+n.normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'');
+function semear(){if(semeado)return;semeado=true;db.ref('config/seedProfV2').once('value',f=>{
+  let v2=Promise.resolve();
+  if(!f.exists()){const ex=new Set(Object.values(professores).map(p=>(p.nome||'').trim().toUpperCase())),up={};
+    SEED.forEach(([a,l])=>l.forEach(n=>{if(!ex.has(n.toUpperCase()))up[slug(n)]={nome:n,area:a}}));
+    v2=(Object.keys(up).length?db.ref('professores').update(up):Promise.resolve()).then(()=>db.ref('config/seedProfV2').set(true))}
+  v2.then(realinhar)})}
+function realinhar(){db.ref('config/seedProfV3').once('value',f=>{if(f.exists())return;db.ref('professores').once('value',s=>{
+  const all=s.val()||{},up={},alvo={'SAMUEL MARTINS DE SOUSA':'LEI','TATIANA MARIA DE ARAGÃO PAIVA':'MULTIMEIOS','GONÇALINHA RODRIGUES MARTINS':'MULTIMEIOS'};
+  Object.entries(all).forEach(([i,p])=>{const a=alvo[(p.nome||'').trim().toUpperCase()];if(a&&p.area!==a)up[i+'/area']=a});
+  (Object.keys(up).length?db.ref('professores').update(up):Promise.resolve()).then(()=>db.ref('config/seedProfV3').set(true))})})}
 const SENHA_SECRETARIA='Ceja23231939', SENHA_PADRAO='12345';
 const MESES=["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
 const AREAS=['LINGUAGENS','CIÊNCIAS DA NATUREZA E MATEMÁTICA','CIÊNCIAS HUMANAS','LEI','MULTIMEIOS'];
@@ -175,8 +196,9 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const akey=a=>a.replace(/[^a-zA-Z0-9]/g,'_');
 const hoje=new Date();
-const S={role:null,prof:null,viaSec:false,ano:String(hoje.getFullYear()),mes:MESES[hoje.getMonth()],dia:String(hoje.getDate()).padStart(2,'0'),area:'LINGUAGENS',modo:'DIARIO',sub:'menu',profSel:null,sit:'ATIVO'};
+const S={rows:30,role:null,prof:null,viaSec:false,ano:String(hoje.getFullYear()),mes:MESES[hoje.getMonth()],dia:String(hoje.getDate()).padStart(2,'0'),area:'LINGUAGENS',modo:'DIARIO',sub:'menu',profSel:null,sit:'ATIVO'};
 let professores={},dadosAtend={},dadosLegacy={},flat=[],sitCache={},SUG={estudante:[],mat:[],nivel:[],componente:[]},alunoInfo={};
+let ED={pid:null,nome:'',rs:[]},SIT={},pend=false,semeado=false;
 let refA=null,refL=null,anoOuvido=null,refS=null,sitOuvido=null,bootDone=false;
 
 /* ---------- SENHAS ---------- */
@@ -193,9 +215,24 @@ function montarSelectLogin(){
   if(atual&&professores[atual])sel.value=atual;else if(q&&professores[q]){sel.value=q;loginTab('prof')}
 }
 function salvarSessao(o,keep){try{if(keep)localStorage.setItem('cejaSess',JSON.stringify(o));else localStorage.removeItem('cejaSess')}catch(e){}}
-function entrarSec(){
-  if($('secSenha').value!==SENHA_SECRETARIA){$('errSec').textContent='Senha incorreta.';return}
+async function secOk(v){const f=await db.ref('config/secSenhaHash').once('value'),h=f.val();return h?h===await hsh(v):v===SENHA_SECRETARIA}
+async function entrarSec(){
+  if(!await secOk($('secSenha').value)){$('errSec').textContent='Senha incorreta.';return}
   $('errSec').textContent='';salvarSessao({role:'sec'},$('keepSec').checked);abrirSec();
+}
+async function mudarSenhaSec(){
+  const e=$('errSenhaSec');e.style.color='#dc2626';
+  if(!await secOk($('ssAtual').value)){e.textContent='Senha atual incorreta.';return}
+  const n=$('ssNova').value;if(n.length<6){e.textContent='A nova senha deve ter ao menos 6 caracteres.';return}
+  if(n!==$('ssConf').value){e.textContent='A confirmação não confere.';return}
+  await db.ref('config/secSenhaHash').set(await hsh(n));e.style.color='#047857';e.textContent='Nova senha da Secretaria criada com sucesso!';
+  ['ssAtual','ssNova','ssConf'].forEach(x=>$(x).value='');
+}
+async function alterarSenhaSec(){
+  const a=prompt('Digite a senha atual da Secretaria:');if(a===null)return;if(!await secOk(a))return alert('Senha atual incorreta.');
+  const n=prompt('Digite a nova senha (mínimo 6 caracteres):');if(!n)return;if(n.length<6)return alert('Senha muito curta.');
+  if(prompt('Confirme a nova senha:')!==n)return alert('A confirmação não confere.');
+  await db.ref('config/secSenhaHash').set(await hsh(n));alert('Senha da Secretaria alterada com sucesso!');
 }
 async function entrarProf(){
   const id=$('profSel').value;if(!id){$('errProf').textContent='Selecione seu nome.';return}
@@ -221,7 +258,7 @@ function sair(){salvarSessao(null,false);S.role=null;S.viaSec=false;['secApp','p
 function voltarSec(){S.viaSec=false;S.role='sec';$('profApp').classList.add('hidden');$('secApp').classList.remove('hidden');S.modo='PROFESSORES';render()}
 function abrirSec(){S.role='sec';$('login').classList.add('hidden');$('profApp').classList.add('hidden');$('secApp').classList.remove('hidden');ouvirAno();render()}
 function abrirProf(id){
-  const p=professores[id];if(!p)return;S.role='prof';S.prof=id;S.area=p.area;
+  const p=professores[id];if(!p)return;S.role='prof';S.prof=id;S.area=p.area;S.rows=30;
   S.mes=MESES[hoje.getMonth()];S.dia=String(hoje.getDate()).padStart(2,'0');
   $('login').classList.add('hidden');$('secApp').classList.add('hidden');$('profApp').classList.remove('hidden');
   $('btnVoltarSec').classList.toggle('hidden',!S.viaSec);
@@ -237,21 +274,21 @@ function ouvirAno(){
 }
 function ouvirSit(){
   const k=S.ano+'/'+akey(S.area);if(sitOuvido===k)return;if(refS)refS.off();sitOuvido=k;
-  refS=db.ref('situacaoAlunos/'+k);refS.on('value',s=>{sitCache=s.val()||{};if(S.role==='sec'&&S.modo==='SITUACAO')render()});
+  refS=db.ref('situacaoAlunos/'+k);refS.on('value',s=>{sitCache=s.val()||{};render()});
 }
 function recalc(){
   flat=[];
   Object.entries(dadosAtend).forEach(([mes,md])=>Object.entries(md||{}).forEach(([dia,dd])=>Object.entries(dd||{}).forEach(([ak,ad])=>Object.entries(ad||{}).forEach(([pid,pd])=>Object.entries(pd||{}).forEach(([k,r])=>{
     if(r&&(r.estudante||'').trim())flat.push({...r,mes,dia,ak,pid,key:k,src:'N'})})))));
   Object.entries(dadosLegacy).forEach(([mes,md])=>Object.entries(md||{}).forEach(([dia,dd])=>Object.entries(dd||{}).forEach(([ak,ad])=>Object.entries(ad||{}).forEach(([k,r])=>{
-    if(r&&(r.estudante||'').trim())flat.push({estudante:r.estudante,mat:r.mat,nivel:r.nivel,componente:r.componente,professor:r.professor,tipo:r.atendimento||'',frequencia:!!r.frequencia,ts:0,mes,dia,ak,pid:'',key:k,src:'L'})}))));
-  const sets={estudante:new Set(),mat:new Set(),nivel:new Set(),componente:new Set()};alunoInfo={};
-  flat.forEach(r=>{['estudante','mat','nivel','componente'].forEach(f=>{const v=(r[f]||'').trim();if(v)sets[f].add(v)});
+    if(r&&(r.estudante||'').trim())flat.push({estudante:r.estudante,mat:r.mat,nivel:r.nivel,componente:r.componente,professor:r.professor,tipo:r.atendimento||'',forma:r.atendimento||'',frequencia:!!r.frequencia,ts:0,mes,dia,ak,pid:'',key:k,src:'L'})}))));
+  const sets={estudante:new Set(),mat:new Set(),nivel:new Set(),componente:new Set(),forma:new Set()};alunoInfo={};
+  flat.forEach(r=>{['estudante','mat','nivel','componente','forma'].forEach(f=>{const v=(r[f]||'').trim();if(v)sets[f].add(v)});
     const n=(r.estudante||'').trim().toUpperCase();if(n&&(r.mat||r.nivel))alunoInfo[n]={mat:(r.mat||'').trim(),nivel:(r.nivel||'').trim()}});
   SUG={};Object.keys(sets).forEach(f=>SUG[f]=[...sets[f]]);
   render();
 }
-db.ref('professores').on('value',s=>{professores=s.val()||{};montarSelectLogin();
+db.ref('professores').on('value',s=>{professores=s.val()||{};montarSelectLogin();semear();
   if(!bootDone){bootDone=true;try{const o=JSON.parse(localStorage.getItem('cejaSess')||'null');if(o&&o.role==='sec')abrirSec();else if(o&&o.role==='prof'&&professores[o.id])abrirProf(o.id)}catch(e){}}
   else render()});
 
@@ -260,17 +297,28 @@ const pn=r=>(r.professor||'').trim().toUpperCase();
 const dataReg=r=>new Date(+S.ano,MESES.indexOf(r.mes),+r.dia);
 const fmt=d=>d?d.toLocaleDateString('pt-BR'):'-';
 const tipoIdx=t=>TIPOS.findIndex(x=>x.toUpperCase()===(t||'').trim().toUpperCase());
-function contar(rs){const c=Array(TIPOS.length).fill(0);rs.forEach(r=>{const i=tipoIdx(r.tipo);if(i>=0)c[i]++});return{c,total:rs.length}}
-function chips(o,todos){return o.c.map((n,i)=>(todos||n>0||true)?`<span class="chip">${TIPOS_PL[i]}: <b>${n}</b></span>`:'').join('')+`<span class="chip">Total de atendimentos: <b>${o.total}</b></span>`}
+function tiposDe(r){const st=new Set();(Array.isArray(r.tipos)?r.tipos:Object.values(r.tipos||{})).forEach(t=>{const i=tipoIdx(t);if(i>=0)st.add(i)});const j=tipoIdx(r.tipo);if(j>=0)st.add(j);return[...st]}
+const livre=a=>a==='LEI'||a==='MULTIMEIOS';
+const normF=x=>(x||'').trim().replace(/\s+/g,' ');
+function colsDe(rs){
+  if(!livre(S.area))return (TIPOS_AREA[S.area]||[0,1,2,3,4,5,6]).map(i=>({k:i,l:TIPOS_PL[i],h:TIPOS_CURTO[i]}));
+  const m=new Map();rs.forEach(r=>{const f=normF(r.forma);if(f&&!m.has(f.toUpperCase()))m.set(f.toUpperCase(),f)});
+  return [...m].sort((a,b)=>a[1].localeCompare(b[1])).map(([k,l])=>({k,l,h:l}));
+}
+function contar(rs,cols){cols=cols||colsDe(rs);const c=cols.map(()=>0);
+  rs.forEach(r=>{const ks=livre(S.area)?[normF(r.forma).toUpperCase()]:tiposDe(r);ks.forEach(k=>{const i=cols.findIndex(x=>x.k===k);if(i>=0)c[i]++})});
+  return{c,cols,total:rs.length}}
+const idPorNome=n=>{const e=Object.entries(professores).find(([i,p])=>(p.nome||'').trim().toUpperCase()===(n||'').trim().toUpperCase());return e?e[0]:''};
+function chips(o){return o.cols.map((x,i)=>`<span class="chip">${esc(x.l)}: <b>${o.c[i]}</b></span>`).join('')+`<span class="chip">Total de atendimentos: <b>${o.total}</b></span>`}
 function grupos(rs){const m={};rs.forEach(r=>{const k=pn(r)||'(SEM PROFESSOR)';(m[k]=m[k]||{nome:r.professor||'(sem professor)',rs:[]}).rs.push(r)});return m}
 function profsDaArea(area,rs){const m={};Object.values(professores).filter(p=>p.area===area).forEach(p=>m[p.nome.trim().toUpperCase()]=p.nome);
   (rs||[]).forEach(r=>{if(pn(r)&&!m[pn(r)])m[pn(r)]=r.professor.trim()});return Object.values(m).sort((a,b)=>a.localeCompare(b))}
 function tabResumo(gs,titulo){
   const ks=Object.keys(gs);if(!ks.length)return `<div class="nd">Nenhum atendimento registrado.</div>`;
-  const tot=Array(TIPOS.length).fill(0);let tt=0;
-  const linhas=ks.sort().map((k,i)=>{const o=contar(gs[k].rs);o.c.forEach((n,j)=>tot[j]+=n);tt+=o.total;
+  const cols=contar([].concat(...ks.map(k=>gs[k].rs))).cols,tot=cols.map(()=>0);let tt=0;
+  const linhas=ks.sort().map((k,i)=>{const o=contar(gs[k].rs,cols);o.c.forEach((n,j)=>tot[j]+=n);tt+=o.total;
     return `<tr><td class="o">${i+1}</td><td class="l" style="font-weight:600">${esc(gs[k].nome)}</td>${o.c.map(n=>`<td>${n||'-'}</td>`).join('')}<td style="font-weight:bold;background:#f0fdf4;color:#0b5736">${o.total}</td></tr>`}).join('');
-  return `<div class="tc"><table class="exp"><thead><tr><th>Ord.</th><th>${titulo}</th>${TIPOS_CURTO.map(t=>`<th>${t}</th>`).join('')}<th>Total</th></tr></thead><tbody>${linhas}</tbody>
+  return `<div class="tc"><table class="exp"><thead><tr><th>Ord.</th><th>${titulo}</th>${cols.map(x=>`<th>${esc(x.h)}</th>`).join('')}<th>Total</th></tr></thead><tbody>${linhas}</tbody>
   <tfoot><tr><td></td><td class="l">TOTAL DA ÁREA</td>${tot.map(n=>`<td>${n}</td>`).join('')}<td>${tt}</td></tr></tfoot></table></div>`;
 }
 const pill=(t,on,fn,cls)=>`<button class="pill ${on?(cls||'green'):''}" onclick="${fn}">${t}</button>`;
@@ -279,15 +327,17 @@ function filtroAno(){let o='';for(let a=2026;a<=2049;a++)o+=`<option ${String(a)
 const filtroArea=()=>`<div class="row"><b>Área</b>${AREAS.map(a=>pill(a,a===S.area,`setArea('${a}')`)).join('')}</div>`;
 const filtroMes=()=>`<div class="row"><b>Mês</b>${MESES.map(m=>pill(m,m===S.mes,`setMes('${m}')`,'ring')).join('')}</div>`;
 const filtroDia=()=>`<div class="row"><b>Dia</b>${Array.from({length:31},(_,i)=>{const d=String(i+1).padStart(2,'0');return `<button class="pill d ${d===S.dia?'green':''}" onclick="setDia('${d}')">${d}</button>`}).join('')}</div>`;
-const setAno=a=>{S.ano=String(a);ouvirAno();render()},mudaAno=d=>{const n=+S.ano+d;if(n>=2026&&n<=2049)setAno(n)};
-const setMes=m=>{S.mes=m;render()},setDia=d=>{S.dia=d;render()};
+const setAno=a=>{S.ano=String(a);S.rows=30;ouvirAno();render()},mudaAno=d=>{const n=+S.ano+d;if(n>=2026&&n<=2049)setAno(n)};
+const setMes=m=>{S.mes=m;S.rows=30;render()},setDia=d=>{S.dia=d;S.rows=30;render()};
 function setArea(a){S.area=a;if(S.modo==='DIARIO')S.sub='menu';render()}
 function setModo(m){S.modo=m;S.sub='menu';render()}
 
 /* ---------- SECRETARIA ---------- */
-function render(){if(S.role==='sec')renderSec();else if(S.role==='prof')renderProf()}
+const editando=()=>{const a=document.activeElement;return !!(a&&a.closest&&a.closest('.edb'))};
+function render(){if(editando()){pend=true;return}pend=false;buildSit();if(S.role==='sec')renderSec();else if(S.role==='prof')renderProf()}
+document.addEventListener('focusout',()=>{if(pend)setTimeout(()=>{if(pend&&!editando())render()},250)});
 function renderSec(){
-  if(S.modo==='SITUACAO')ouvirSit();
+  ouvirSit();
   const m=S.modo,ak=akey(S.area);let h=`<div class="filters"><div class="row"><b>Modo</b>${Object.keys(ROT).map(k=>pill(ROT[k],m===k,`setModo('${k}')`,'gold')).join('')}</div>`;
   if(m!=='PROFESSORES')h+=filtroAno();
   if(['DIARIO','SITUACAO','MENSAL'].includes(m))h+=filtroArea();
@@ -296,31 +346,26 @@ function renderSec(){
   h+='</div>';
   if(m==='DIARIO')h+=secDiario(ak);else if(m==='ESTUDANTES')h+=secEstudantes();else if(m==='SITUACAO')h+=secSituacao(ak);
   else if(m==='MENSAL')h+=secMensal(ak);else h+=secProfessores();
-  $('secBody').innerHTML=h;
+  $('secBody').innerHTML=h;const eh=$('secBody').querySelector('.edHost');if(eh)mountEd(eh);
 }
 const voltar=(p)=>`<button class="btn sm alt" style="margin-bottom:12px" onclick="S.sub='${p}';render()">← Voltar</button>`;
 function linhasDia(){return flat.filter(r=>r.mes===S.mes&&r.dia===S.dia&&r.ak===akey(S.area)).sort((a,b)=>(a.ts||0)-(b.ts||0))}
-function tabelaDia(rs){
-  if(!rs.length)return `<div class="tc"><div class="nd">Nenhum atendimento registrado neste dia.</div></div>`;
-  return `<div class="tc"><table class="exp"><thead><tr><th>Ord.</th><th>Estudante</th><th>Mat.</th><th>Nível</th><th>Componente curricular</th><th>Professor(a)</th><th>Atendimento</th><th>Frequência</th><th></th></tr></thead><tbody>${
-   rs.map((r,i)=>`<tr><td class="o">${i+1}</td><td class="l">${esc(r.estudante)}</td><td>${esc(r.mat)}</td><td>${esc(r.nivel)}</td><td class="l">${esc(r.componente)}</td><td class="l">${esc(r.professor)}</td><td class="l">${esc(r.tipo)}</td><td>${r.frequencia?'✔':'-'}</td><td><button class="ib" title="Excluir" onclick="excluirReg('${r.src}','${r.mes}','${r.dia}','${r.ak}','${r.pid}','${r.key}')">🗑</button></td></tr>`).join('')}</tbody></table></div>`;
-}
-function excluirReg(src,mes,dia,ak,pid,key){if(!confirm('Excluir este registro?'))return;
-  db.ref(src==='N'?`atend/${S.ano}/${mes}/${dia}/${ak}/${pid}/${key}`:`frequencias/${S.ano}/${mes}/${dia}/${ak}/${key}`).remove()}
 function secDiario(ak){
+  ED={pid:null,nome:'',rs:[]};
   if(S.sub==='menu')return `<div class="areaTag">${S.area}</div><div class="big">
-    <button class="bigbtn" onclick="S.sub='geral';render()">📋 Atendimento Diário Geral<small>Todos os atendimentos feitos pelos professores nos dias de cada mês</small></button>
+    <button class="bigbtn" onclick="S.sub='geral';S.rows=30;render()">📋 Atendimento Diário Geral<small>Todos os atendimentos feitos pelos professores nos dias de cada mês</small></button>
     <button class="bigbtn" onclick="S.sub='lista';render()">👩‍🏫 Atendimento Diário Por Professor<small>Escolha o professor(a) da área para ver os atendimentos do dia</small></button></div>`;
-  if(S.sub==='geral'){const rs=linhasDia(),cont=contar(rs);
-    return voltar('menu')+`<div class="sum"><div class="t">Atendimento diário geral: ${S.area} — ${S.mes} — dia ${S.dia} — ${S.ano}</div><div class="d"><span>Atendimentos: <strong>${rs.length}</strong></span><span>Presenças: <strong>${rs.filter(r=>r.frequencia).length}</strong></span><span>Área: <strong>${S.area}</strong></span></div></div>`
-    +tabelaDia(rs)+`<div class="sec-t">Total do dia por professor(a)</div>`+tabResumo(grupos(rs),'Professor(a)');}
+  if(S.sub==='geral'){const rs=linhasDia();ED.rs=rs;
+    return voltar('menu')+`<div class="sum"><div class="t">Atendimento diário geral: ${S.area} — ${S.mes} — dia ${S.dia} — ${S.ano}</div><div class="d"><span>Atendimentos: <strong>${rs.length}</strong></span><span>Presenças: <strong>${rs.filter(r=>r.frequencia).length}</strong></span><span>Área: <strong>${S.area}</strong></span></div></div>
+    <div class="sec-t">Total do dia da área</div><div class="chips">${chips(contar(rs))}</div><div class="edHost"></div><div class="sec-t">Total do dia por professor(a)</div>`+tabResumo(grupos(rs),'Professor(a)');}
   if(S.sub==='lista'){const nomes=profsDaArea(S.area,flat.filter(r=>r.ak===ak));
-    return voltar('menu')+`<div class="areaTag">Professores — ${S.area}</div>`+(nomes.length?`<div class="big">${nomes.map(n=>`<button class="bigbtn" style="padding:22px;font-size:1rem" onclick="S.profSel=this.dataset.n;S.sub='prof';render()" data-n="${esc(n)}">👩‍🏫 ${esc(n)}</button>`).join('')}</div>`:`<div class="nd">Nenhum professor cadastrado nesta área. Cadastre na aba PROFESSORES.</div>`);}
+    return voltar('menu')+`<div class="areaTag">Professores — ${S.area}</div>`+(nomes.length?`<div class="big">${nomes.map(n=>`<button class="bigbtn" style="padding:22px;font-size:1rem" onclick="S.profSel=this.dataset.n;S.sub='prof';S.rows=30;render()" data-n="${esc(n)}">👩‍🏫 ${esc(n)}</button>`).join('')}</div>`:`<div class="nd">Nenhum professor cadastrado nesta área. Cadastre na aba PROFESSORES.</div>`);}
   const nome=S.profSel||'',N=nome.toUpperCase();
   const todos=flat.filter(r=>r.ak===ak&&pn(r)===N),rs=todos.filter(r=>r.mes===S.mes&&r.dia===S.dia).sort((a,b)=>(a.ts||0)-(b.ts||0));
+  ED={pid:idPorNome(nome)||'_sem',nome,rs};
   return voltar('lista')+`<div class="sum"><div class="t">${esc(nome)} — ${S.area} — ${S.mes} — dia ${S.dia} — ${S.ano}</div></div>
    <div class="sec-t">Atendimento total do dia</div><div class="chips">${chips(contar(rs))}</div>
-   <div class="sec-t">Acumulado de ${S.mes}</div><div class="chips">${chips(contar(todos.filter(r=>r.mes===S.mes)))}</div>`+tabelaDia(rs);
+   <div class="sec-t">Acumulado de ${S.mes}</div><div class="chips">${chips(contar(todos.filter(r=>r.mes===S.mes)))}</div><div class="edHost"></div>`;
 }
 function secEstudantes(){
   const m={};flat.forEach(r=>{const k=r.estudante.trim().toUpperCase()+'___'+(r.mat||'').trim().toUpperCase();const d=dataReg(r);
@@ -352,59 +397,100 @@ function secMensal(ak){
 }
 /* PROFESSORES (cadastro + ambientes compartilhados) */
 function secProfessores(){
-  let h=`<div class="filters"><div class="row"><b>Novo(a)</b><input id="npNome" class="inp" style="max-width:340px" placeholder="Nome completo do professor(a)"><select id="npArea" class="inp" style="max-width:300px">${AREAS.map(a=>`<option>${a}</option>`).join('')}</select><button class="btn sm" onclick="cadastrarProf()">Cadastrar</button></div><p class="hint">Senha padrão de todo professor(a) novo: 12345 (ele mesmo pode criar outra na tela de login).</p></div>`;
+  let h=`<div class="filters"><div class="row"><b>Novo(a)</b><input id="npNome" class="inp" style="max-width:340px" placeholder="Nome completo do professor(a)"><select id="npArea" class="inp" style="max-width:300px">${AREAS.map(a=>`<option>${a}</option>`).join('')}</select><button class="btn sm" onclick="cadastrarProf()">Cadastrar</button></div><p class="hint">Senha padrão de todo professor(a) novo: 12345 (ele mesmo pode criar outra na tela de login). A Secretaria pode cadastrar, remover e mudar professores de área a qualquer hora. Em LEI e MULTIMEIOS o professor digita a forma de atendimento.</p></div>`;
   AREAS.forEach(a=>{const l=Object.entries(professores).filter(([i,p])=>p.area===a).sort((x,y)=>x[1].nome.localeCompare(y[1].nome));if(!l.length)return;
-    h+=`<div class="sec-t">${a}</div><div class="tc"><table><thead><tr><th>Professor(a)</th><th>Ambiente</th><th>Senha</th><th></th></tr></thead><tbody>${l.map(([i,p])=>`<tr><td class="l" style="font-weight:600">${esc(p.nome)}</td>
-     <td><button class="btn sm" onclick="abrirAmbiente('${i}')">Abrir ambiente</button> <button class="btn sm alt" onclick="copiarLink('${i}')">Copiar link</button></td>
-     <td>${p.senhaHash?'Personalizada <button class="btn sm alt" onclick="resetSenha(\''+i+'\')">Voltar p/ 12345</button>':'Padrão (12345)'}</td>
-     <td><button class="ib" title="Remover" onclick="removerProf('${i}')">🗑</button></td></tr>`).join('')}</tbody></table></div>`});
+    h+=`<div class="sec-t">${a}</div><div class="tc"><table><thead><tr><th>Professor(a)</th><th class="no-exp">Mudar de área</th><th class="no-exp">Ambiente</th><th class="no-exp">Senha</th><th class="no-exp"></th></tr></thead><tbody>${l.map(([i,p])=>`<tr><td class="l" style="font-weight:600">${esc(p.nome)}</td><td class="no-exp"><select class="inp" style="max-width:270px" onchange="moverProf('${i}',this.value)">${AREAS.map(x=>`<option ${x===p.area?'selected':''}>${x}</option>`).join('')}</select></td>
+     <td class="no-exp"><button class="btn sm" onclick="abrirAmbiente('${i}')">Abrir ambiente</button> <button class="btn sm alt" onclick="copiarLink('${i}')">Copiar link</button></td>
+     <td class="no-exp">${p.senhaHash?'Personalizada <button class="btn sm alt" onclick="resetSenha(\''+i+'\')">Voltar p/ 12345</button>':'Padrão (12345)'}</td>
+     <td class="no-exp"><button class="ib" title="Remover" onclick="removerProf('${i}')">🗑</button></td></tr>`).join('')}</tbody></table></div>`});
   return h+(Object.keys(professores).length?'':'<div class="nd">Nenhum professor cadastrado ainda.</div>');
 }
 function cadastrarProf(){const n=$('npNome').value.trim().replace(/\s+/g,' ');if(n.length<5)return alert('Digite o nome completo.');db.ref('professores').push({nome:n,area:$('npArea').value})}
+function moverProf(id,a){db.ref('professores/'+id+'/area').set(a)}
 function abrirAmbiente(id){S.viaSec=true;abrirProf(id)}
 function copiarLink(id){const u=location.origin+location.pathname+'?prof='+id;(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>alert('Link copiado:\n'+u)).catch(()=>prompt('Copie o link:',u))}
 function resetSenha(id){if(confirm('Redefinir para a senha padrão 12345?'))db.ref('professores/'+id+'/senhaHash').remove()}
 function removerProf(id){if(confirm('Remover este professor(a)? Os atendimentos já registrados são mantidos.'))db.ref('professores/'+id).remove()}
 
-/* ---------- PROFESSOR ---------- */
-const pPath=()=>`atend/${S.ano}/${S.mes}/${S.dia}/${akey(S.area)}/${S.prof}`;
-function renderProf(){
-  const p=professores[S.prof];if(!p)return;const ak=akey(p.area),meus=flat.filter(r=>r.src==='N'&&r.pid===S.prof&&r.ak===ak);
-  $('profFilt').innerHTML=filtroAno()+filtroMes()+filtroDia();
-  $('profDia').innerHTML=chips(contar(meus.filter(r=>r.mes===S.mes&&r.dia===S.dia)));
-  $('profMes').innerHTML=chips(contar(meus.filter(r=>r.mes===S.mes)));
-  if(document.activeElement&&document.activeElement.closest&&document.activeElement.closest('#profRows'))return;
-  const rs=meus.filter(r=>r.mes===S.mes&&r.dia===S.dia).sort((a,b)=>(a.ts||0)-(b.ts||0));
-  $('profRows').innerHTML='';rs.forEach(r=>addLinha(r));for(let i=rs.length;i<Math.max(10,rs.length+3);i++)addLinha();
+/* ---------- TABELA DE ATENDIMENTO DIÁRIO (professor e secretaria) ---------- */
+const tiposArea=()=>TIPOS_AREA[S.area]||TIPOS.map((_,i)=>i);
+function buildSit(){SIT={};const ak=akey(S.area);flat.filter(r=>r.ak===ak).forEach(r=>{const k=sKey(r.estudante,r.mat),d=dataReg(r),o=SIT[k]||(SIT[k]={d:null});if(r.frequencia&&(!o.d||d>o.d))o.d=d})}
+function sitDe(n,m){if(!(n||'').trim())return '';const k=sKey(n,m),c=sitCache[k];if(c&&c.concluido)return '🔵 Concludente';const o=SIT[k];if(!o)return '⚪ Novo';const d=o.d?Math.floor((new Date()-o.d)/864e5):999;return d<=30?'🟢 Ativo':d<60?'🟡 Pré-evadido':'🔴 Evadido'}
+function refDe(tr){const b=`${S.ano}/${S.mes}/${S.dia}/${akey(S.area)}`;return db.ref(tr.dataset.src==='L'?`frequencias/${b}/${tr.dataset.key}`:`atend/${b}/${tr.dataset.pid}/${tr.dataset.key}`)}
+function mountEd(host){
+  const ti=tiposArea();
+  host.innerHTML=`<div class="tc"><table class="ed"><thead><tr><th>Ord.</th><th>Matrícula</th><th>Nome do estudante</th><th>Data</th><th>Professor(a) que atendeu</th>${livre(S.area)?'<th style="min-width:240px">Forma de atendimento (digitada pelo professor)</th>':ti.map(i=>`<th class="tp">${TIPOS[i]}</th>`).join('')}<th>Presença</th><th>Situação do estudante</th><th class="no-exp"></th></tr></thead><tbody class="edb"></tbody></table></div><div class="bar"><button class="btn sm alt" onclick="maisLinhas(this)">+ Adicionar 10 linhas</button></div>`;
+  const tb=host.querySelector('.edb'),rs=ED.rs||[],tot=Math.max(S.rows,rs.length);for(let i=0;i<tot;i++)addRow(tb,rs[i]);
 }
-function addLinha(r){
-  r=r||{frequencia:true};const tb=$('profRows'),n=tb.children.length+1,ti=TIPOS_AREA[S.area]||TIPOS.map((_,i)=>i),tr=document.createElement('tr');tr.dataset.key=r.key||'';
-  const inp=(f,ac)=>`<td><input class="ci" data-f="${f}" value="${esc(r[f]||'')}" ${ac?`oninput="ac(event,'${f}')"`:''} onchange="salvarLinha(this)" autocomplete="off"></td>`;
-  tr.innerHTML=`<td class="o">${n}</td>${inp('estudante',1)}${inp('mat',1)}${inp('nivel',1)}${inp('componente',1)}
-   <td><select class="ci" data-f="tipo" onchange="salvarLinha(this)"><option value="">—</option>${ti.map(i=>`<option ${r.tipo===TIPOS[i]?'selected':''}>${TIPOS[i]}</option>`).join('')}</select></td>
-   <td><input type="checkbox" data-f="frequencia" ${r.frequencia?'checked':''} onchange="salvarLinha(this)"></td><td><button class="ib" onclick="delLinha(this)">🗑</button></td>`;
+function maisLinhas(b){const tb=b.closest('.edHost').querySelector('.edb');for(let i=0;i<10;i++)addRow(tb);S.rows=tb.children.length}
+function addRow(tb,r){
+  r=r||{frequencia:true};const tr=document.createElement('tr'),ti=tiposArea(),ts=tiposDe(r);
+  tr.dataset.key=r.key||'';tr.dataset.pid=r.pid||'';tr.dataset.src=r.src||'';tr.dataset.ts=r.ts||'';
+  const inp=f=>`<td><input class="ci" data-f="${f}" value="${esc(r[f]||'')}" oninput="ac(event,'${f}')" onchange="salvarLinha(this)" autocomplete="off"></td>`;
+  let pc;
+  if(ED.pid)pc=`<td class="l">${esc(ED.nome)}</td>`;
+  else{let cur=(r.pid&&r.pid!=='_sem'&&professores[r.pid])?r.pid:idPorNome(r.professor);
+    const op=Object.entries(professores).filter(([i,p])=>p.area===S.area).sort((a,b)=>a[1].nome.localeCompare(b[1].nome)).map(([i,p])=>[i,p.nome]);
+    if(cur&&!op.some(o=>o[0]===cur))op.push([cur,professores[cur].nome]);
+    if(!cur&&(r.professor||'').trim()){cur='n:'+r.professor.trim();op.push([cur,r.professor.trim()])}
+    pc=`<td><select class="ci" data-f="prof" onchange="salvarLinha(this)"><option value="">— selecione —</option>${op.map(o=>`<option value="${esc(o[0])}" ${o[0]===cur?'selected':''}>${esc(o[1])}</option>`).join('')}</select></td>`}
+  tr.innerHTML=`<td class="o">${tb.children.length+1}</td>${inp('mat')}${inp('estudante')}<td>${S.dia}/${String(MESES.indexOf(S.mes)+1).padStart(2,'0')}/${S.ano}</td>${pc}${livre(S.area)?`<td><input class="ci" data-f="forma" value="${esc(r.forma||r.tipo||'')}" oninput="ac(event,'forma')" onchange="salvarLinha(this)" autocomplete="off" style="min-width:240px"></td>`:ti.map(i=>`<td><input type="checkbox" data-f="t" data-i="${i}" ${ts.includes(i)?'checked':''} onchange="salvarLinha(this)"></td>`).join('')}<td><input type="checkbox" data-f="freq" ${r.frequencia?'checked':''} onchange="salvarLinha(this)"></td><td class="sit">${sitDe(r.estudante,r.mat)}</td><td class="no-exp"><button class="ib" title="Limpar linha" onclick="delLinha(this)">🗑</button></td>`;
   tb.appendChild(tr);
 }
 function ac(e,f){const i=e.target,v=i.value;if((e.inputType||'').startsWith('delete')||!v.trim())return;
   const m=(SUG[f]||[]).find(x=>x.toUpperCase().startsWith(v.toUpperCase()));if(m){i.value=m;i.setSelectionRange(v.length,m.length)}}
 function salvarLinha(el){
-  const tr=el.closest('tr'),g=f=>tr.querySelector(`[data-f="${f}"]`);
-  if(el.dataset.f==='estudante'){const inf=alunoInfo[g('estudante').value.trim().toUpperCase()];if(inf){if(!g('mat').value&&inf.mat)g('mat').value=inf.mat;if(!g('nivel').value&&inf.nivel)g('nivel').value=inf.nivel}}
-  const o={estudante:g('estudante').value.trim(),mat:g('mat').value.trim(),nivel:g('nivel').value.trim(),componente:g('componente').value.trim(),tipo:g('tipo').value};
-  const any=o.estudante||o.mat||o.nivel||o.componente||o.tipo,ref=db.ref(pPath());let k=tr.dataset.key;
-  if(!k&&!any)return;
-  if(k&&!any){ref.child(k).remove();tr.dataset.key='';return}
-  if(!k){k=ref.push().key;tr.dataset.key=k}
-  ref.child(k).set({...o,professor:professores[S.prof].nome,profId:S.prof,frequencia:g('frequencia').checked,ts:Date.now()})
-   .then(()=>{$('profSalvo').textContent='✔ Salvo às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})});
+  const tr=el.closest('tr'),g=f=>tr.querySelector(`[data-f="${f}"]`),f=el.dataset.f;
+  let mat=g('mat').value.trim(),est=g('estudante').value.trim();
+  if(f==='estudante'){const inf=alunoInfo[est.toUpperCase()];if(inf&&!mat&&inf.mat){mat=inf.mat;g('mat').value=mat}}
+  if(f==='mat'&&mat&&!est){const x=flat.find(r=>(r.mat||'').trim()===mat&&(r.estudante||'').trim());if(x){est=x.estudante.trim();g('estudante').value=est}}
+  const tipos=[...tr.querySelectorAll('[data-f="t"]:checked')].map(c=>TIPOS[+c.dataset.i]),freq=g('freq').checked,forma=livre(S.area)?normF(g('forma').value):'';
+  let pid,nome;
+  if(ED.pid){pid=ED.pid;nome=ED.nome}else{const v=g('prof').value;if(v.startsWith('n:')){pid='_sem';nome=v.slice(2)}else if(v){pid=v;nome=(professores[v]||{}).nome||''}else{pid='_sem';nome=''}}
+  if(!(est||mat||tipos.length||forma)){if(tr.dataset.key)refDe(tr).remove();tr.dataset.key='';return}
+  const base=db.ref(`atend/${S.ano}/${S.mes}/${S.dia}/${akey(S.area)}/${pid}`);let key=tr.dataset.key;
+  if(key&&(tr.dataset.src==='L'||tr.dataset.pid!==pid)){refDe(tr).remove();key=''}
+  if(!key)key=base.push().key;
+  const ts=+tr.dataset.ts||Date.now();tr.dataset.key=key;tr.dataset.pid=pid;tr.dataset.src='N';tr.dataset.ts=ts;
+  tr.querySelector('.sit').textContent=sitDe(est,mat);
+  base.child(key).set({estudante:est,mat,professor:nome,profId:pid,tipos,forma,frequencia:freq,ts})
+   .then(()=>{const p=$('profSalvo');if(p)p.textContent='✔ Salvo às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})});
 }
-function delLinha(b){const tr=b.closest('tr'),k=tr.dataset.key;if(k)db.ref(pPath()+'/'+k).remove();tr.dataset.key='';tr.querySelectorAll('input.ci').forEach(i=>i.value='');tr.querySelector('select').value='';tr.querySelector('[type=checkbox]').checked=true}
+function delLinha(b){const tr=b.closest('tr');if(tr.dataset.key){if(!confirm('Limpar esta linha e excluir o atendimento registrado?'))return;refDe(tr).remove()}
+  tr.dataset.key='';tr.dataset.src='';tr.dataset.ts='';tr.querySelectorAll('input.ci').forEach(i=>i.value='');const sl=tr.querySelector('select');if(sl)sl.value='';
+  tr.querySelectorAll('[data-f="t"]').forEach(c=>c.checked=false);tr.querySelector('[data-f="freq"]').checked=true;tr.querySelector('.sit').textContent=''}
+function renderProf(){
+  const p=professores[S.prof];if(!p)return;const ak=akey(p.area),N=p.nome.trim().toUpperCase();
+  const meus=flat.filter(r=>r.ak===ak&&(r.pid===S.prof||(r.src==='L'&&pn(r)===N)));
+  $('profFilt').innerHTML=filtroAno()+filtroMes()+filtroDia();
+  $('profDia').innerHTML=chips(contar(meus.filter(r=>r.mes===S.mes&&r.dia===S.dia)));
+  $('profMes').innerHTML=chips(contar(meus.filter(r=>r.mes===S.mes)));
+  ED={pid:S.prof,nome:p.nome,rs:meus.filter(r=>r.mes===S.mes&&r.dia===S.dia).sort((a,b)=>(a.ts||0)-(b.ts||0))};
+  mountEd($('profEd'));
+}
 
-/* ---------- EXPORTAR CSV ---------- */
-function exportarCsv(){
-  const tabs=document.querySelectorAll(S.role==='sec'?'#secBody table.exp':'#profApp table');if(!tabs.length)return alert('Nada para exportar nesta tela.');
-  let csv='';tabs.forEach(t=>{t.querySelectorAll('tr').forEach(tr=>{const c=[...tr.children].map(td=>{const i=td.querySelector('input,select');const v=i?(i.type==='checkbox'?(i.checked?'SIM':'NÃO'):i.value):td.innerText.trim();return `"${v.replace(/"/g,'""')}"`});csv+=c.join(';')+'\n'});csv+='\n'});
-  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+csv],{type:'text/csv;charset=utf-8;'}));a.download=`atendimento_${S.ano}_${S.mes}.csv`;a.click();
+/* ---------- EXPORTAR PDF / WORD ---------- */
+function exportar(tipo){
+  const root=S.role==='sec'?$('secBody'):$('profMain'),c=root.cloneNode(true);
+  const oi=root.querySelectorAll('input,select'),ci=c.querySelectorAll('input,select');
+  oi.forEach((o,i)=>{const t=o.type==='checkbox'?(o.checked?'✔':''):o.tagName==='SELECT'?(o.selectedOptions[0]&&o.value?o.selectedOptions[0].text:''):o.value;ci[i].replaceWith(document.createTextNode(t))});
+  c.querySelectorAll('.filters,.bar,.no-exp,button,details,#profSalvo').forEach(e=>e.remove());
+  c.querySelectorAll('table.ed tbody tr').forEach(tr=>{if(!tr.children[1].textContent.trim()&&!tr.children[2].textContent.trim())tr.remove()});
+  let sub;
+  if(S.role==='prof'){const p=professores[S.prof]||{};sub=`${p.nome} — ${p.area} — ${S.dia}/${String(MESES.indexOf(S.mes)+1).padStart(2,'0')}/${S.ano}`}
+  else{sub='Secretaria — '+ROT[S.modo];if(['DIARIO','SITUACAO','MENSAL'].includes(S.modo))sub+=' — '+S.area;
+    if(S.modo==='DIARIO'&&(S.sub==='geral'||S.sub==='prof'))sub+=` — ${S.dia}/${String(MESES.indexOf(S.mes)+1).padStart(2,'0')}/${S.ano}`;else if(S.modo==='MENSAL')sub+=` — ${S.mes}/${S.ano}`;else if(S.modo!=='PROFESSORES')sub+=' — '+S.ano}
+  const css="body{font-family:Georgia,serif;color:#111}h1{font-size:16pt;color:#0b5736;margin:0}h2{font-size:11pt;font-weight:normal;margin:2px 0 10px}table{border-collapse:collapse;width:100%;font-size:9pt;margin-bottom:12px}th{background:#0b5736;color:#fff;border:1px solid #084229;padding:4px;-webkit-print-color-adjust:exact;print-color-adjust:exact}td{border:1px solid #888;padding:3px 4px;text-align:center}td.l{text-align:left}tfoot td{font-weight:bold;background:#eee}.sum,.areaTag{border:1px solid #0b5736;padding:5px 8px;margin-bottom:8px;font-weight:bold}.d span{margin-right:14px;font-weight:normal}.chip{display:inline-block;border:1px solid #888;padding:1px 6px;margin:2px;font-size:9pt}.sec-t,.t{font-weight:bold;color:#0b5736;margin:8px 0 3px}.tc{overflow:visible}@page{size:landscape;margin:12mm}";
+  const tit='CEJA Dr. Gerardo Camelo Madeira — '+sub,word=tipo==='word';
+  const cab=(word?'':`<img src="${LOGO}" style="height:60px;float:left;margin-right:12px">`)+`<h1>CEJA DR. GERARDO CAMELO MADEIRA</h1><h2>Atendimento Diário — ${esc(sub)}</h2><div style="clear:both"></div>`;
+  let html;
+  if(word)html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:w="urn:schemas-microsoft-com:office:word" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="utf-8"><title>${esc(tit)}</title>`+'<'+'!--[if gte mso 9]><xml><w:WordDocument><w:View>Print</w:View><w:Zoom>90</w:Zoom></w:WordDocument></xml><![endif]--'+'>'+`<style>@page Section1{size:29.7cm 21cm;mso-page-orientation:landscape;margin:1.2cm}div.Section1{page:Section1}${css}</style></head><body><div class="Section1">${cab}${c.innerHTML}</div></body></html>`;
+  else html=`<!DOCTYPE html><html><head><meta charset="utf-8"><title>${esc(tit)}</title><style>${css}</style></head><body>${cab}${c.innerHTML}</body></html>`;
+  const nome=('atendimento_'+sub).replace(/[^a-zA-Z0-9À-ú]+/g,'_');
+  if(word){const a=document.createElement('a');a.href=URL.createObjectURL(new Blob(['\uFEFF'+html],{type:'application/msword'}));a.download=nome+'.doc';a.click();return}
+  const fr=document.createElement('iframe');fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';document.body.appendChild(fr);
+  fr.contentDocument.open();fr.contentDocument.write(html);fr.contentDocument.close();
+  setTimeout(()=>{fr.contentWindow.focus();fr.contentWindow.print();setTimeout(()=>fr.remove(),60000)},500);
 }
 </script>
 </body>
