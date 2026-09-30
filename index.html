@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CEJA Dr. Gerardo Camelo Madeira - Atendimento Diário V3</title>
+<title>CEJA Dr. Gerardo Camelo Madeira - Atendimento Diário V4</title>
 <meta name="theme-color" content="#0b5736">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
@@ -28,7 +28,7 @@ body{background:var(--gbg);color:#1f2937;min-height:100vh;-webkit-tap-highlight-
 .tab.on{background:var(--g);color:#fff;border-color:var(--g)}
 .fg{text-align:left;margin-bottom:13px}.fg label{display:block;font-size:.83rem;font-weight:600;margin-bottom:5px;color:#374151}
 .fg input,.fg select,.inp{width:100%;padding:10px 12px;border:1px solid var(--bd);border-radius:6px;font-size:.92rem;outline:none;background:#fff}
-.hint{font-size:.75rem;color:#64748b;margin-topa:4px;font-style:italic;text-align:left}
+.hint{font-size:.75rem;color:#64748b;margin-top:4px;font-style:italic;text-align:left}
 .btn{padding:11px;background:var(--g);color:#fff;border:none;border-radius:6px;font-size:.98rem;font-weight:bold;cursor:pointer;width:100%}
 .btn:hover{background:#084229}
 .btn.sm{width:auto;padding:7px 14px;font-size:.84rem}.btn.alt{background:#fff;color:#374151;border:1px solid var(--bd)}.btn.red{background:var(--red)}
@@ -75,9 +75,13 @@ input[type=checkbox]{width:20px;height:20px;accent-color:var(--g);cursor:pointer
 .ib{border:none;background:none;cursor:pointer;font-size:1rem}
 table.ed th.tp{font-size:.68rem;max-width:92px;white-space:normal;line-height:1.15}
 table.ed td input.ci{min-width:70px}table.ed td input[data-f=estudante]{min-width:240px}table.ed select.ci{min-width:180px}
-.sit{white-space:nowrap;font-weight:600;font-size:.82rem}
+.status-legend{margin-top:8px;padding:8px 12px;background:#f8fafc;border:1px solid var(--bd);border-radius:8px;font-size:.78rem;color:#334155;line-height:1.45}.sit{white-space:nowrap;font-weight:600;font-size:.82rem}
+.exp th{white-space:normal;line-height:1.12;vertical-align:middle;word-break:normal}
+.exp td{vertical-align:middle}
+.exp .del-aluno{white-space:nowrap}
+.btn.delete-student{background:#b91c1c}.btn.delete-student:hover{background:#991b1b}
 
-/* ===== AJUSTES V3 ===== */
+/* ===== AJUSTES V4 ===== */
 body,input,select,button,table{font-family:"Times New Roman",Georgia,serif}
 table.ed{table-layout:fixed;min-width:1450px}
 table.ed th{vertical-align:middle}
@@ -157,7 +161,7 @@ table.ed td.col-sit{white-space:normal;font-size:.8rem}
     <div class="us"><span>Conectado como <strong>Secretaria</strong></span><button onclick="alterarSenhaSec()">Alterar senha</button><button onclick="sair()">Sair</button></div>
   </header>
   <main>
-    <div class="bar"><button class="btn sm save" onclick="salvarAlteracoesTela()">💾 Salvar alterações</button><button class="btn sm" onclick="exportar('pdf')">📄 Exportar PDF</button><button class="btn sm alt" onclick="exportar('word')">📝 Exportar Word</button><span class="badge">Modo online: Sincronizado em tempo real</span></div>
+    <div class="bar"><button class="btn sm save" onclick="salvarAlteracoesTela()">💾 Salvar alterações</button><button class="btn sm" onclick="exportar('pdf')">📄 Exportar PDF</button><button class="btn sm alt" onclick="exportar('word')">📝 Exportar Word</button><span class="badge sync-badge" id="syncBadgeSec">Modo online: Sincronizando…</span></div>
     <div id="secBody"></div>
   </main>
 </div>
@@ -170,7 +174,7 @@ table.ed td.col-sit{white-space:normal;font-size:.8rem}
     <div class="us"><span id="profWho"></span><button id="btnVoltarSec" class="hidden" onclick="voltarSec()">← Secretaria</button><button onclick="alterarSenha()">Alterar senha</button><button onclick="sair()">Sair</button></div>
   </header>
   <main id="profMain">
-    <div class="bar"><button class="btn sm save" onclick="salvarAlteracoesTela()">💾 Salvar alterações</button><button class="btn sm" onclick="exportar('pdf')">📄 Exportar PDF</button><button class="btn sm alt" onclick="exportar('word')">📝 Exportar Word</button><span class="badge">Modo online: Sincronizado em tempo real</span></div>
+    <div class="bar"><button class="btn sm save" onclick="salvarAlteracoesTela()">💾 Salvar alterações</button><button class="btn sm" onclick="exportar('pdf')">📄 Exportar PDF</button><button class="btn sm alt" onclick="exportar('word')">📝 Exportar Word</button><span class="badge sync-badge" id="syncBadgeProf">Modo online: Sincronizando…</span></div>
     <div class="areaTag" id="profTag"></div>
     <div class="filters" id="profFilt"></div>
     <div class="sum"><div class="t">Atendimentos do dia <span id="profSalvo" style="font-weight:normal;font-size:.78rem;color:#047857;margin-left:10px"></span></div>
@@ -189,6 +193,16 @@ document.getElementById('pwaManifest').href=URL.createObjectURL(new Blob([JSON.s
 
 firebase.initializeApp({apiKey:"AIzaSyCg7l7axov73nQU1qlIG3NBWw8SWrPFX4",authDomain:"atendimentos-ceja.firebaseapp.com",databaseURL:"https://atendimentos-ceja-default-rtdb.firebaseio.com",projectId:"atendimentos-ceja",storageBucket:"atendimentos-ceja.firebasestorage.app",messagingSenderId:"330609197724",appId:"1:330609197724:web:45b030f4c6f1cc5faf6359"});
 const db=firebase.database();
+const connRef=db.ref('.info/connected');
+connRef.on('value',snap=>{
+  const online=!!snap.val();
+  document.querySelectorAll('.sync-badge').forEach(el=>{
+    el.textContent=online?'Modo online: Sincronizado em tempo real':'Modo offline: aguardando conexão';
+    el.style.color=online?'#047857':'#9a3412';
+    el.style.background=online?'#d1fae5':'#ffedd5';
+    el.style.borderColor=online?'#a7f3d0':'#fed7aa';
+  });
+});
 
 const PROFESSORES_BASE=[
 ['Aline Dantas Moreira','LINGUAGENS','12345'],
@@ -401,7 +415,7 @@ function tabResumo(gs,titulo){
   const cols=contar([].concat(...ks.map(k=>gs[k].rs))).cols,tot=cols.map(()=>0);let tt=0;
   const linhas=ks.sort().map((k,i)=>{const o=contar(gs[k].rs,cols);o.c.forEach((n,j)=>tot[j]+=n);tt+=o.total;
     return `<tr><td class="o">${i+1}</td><td class="l" style="font-weight:600">${esc(gs[k].nome)}</td>${o.c.map(n=>`<td>${n||'-'}</td>`).join('')}<td style="font-weight:bold;background:#f0fdf4;color:#0b5736">${o.total}</td></tr>`}).join('');
-  return `<div class="tc"><table class="exp"><thead><tr><th>Ord.</th><th>${titulo}</th>${cols.map(x=>`<th>${esc(x.h)}</th>`).join('')}<th>Total</th></tr></thead><tbody>${linhas}</tbody>
+  return `<div class="tc"><table class="exp"><thead><tr><th>ORD.</th><th>${titulo}</th>${cols.map(x=>`<th>${esc(x.h)}</th>`).join('')}<th>TOTAL</th></tr></thead><tbody>${linhas}</tbody>
   <tfoot><tr><td></td><td class="l">TOTAL DA ÁREA</td>${tot.map(n=>`<td>${n}</td>`).join('')}<td>${tt}</td></tr></tfoot></table></div>`;
 }
 const pill=(t,on,fn,cls)=>`<button class="pill ${on?(cls||'green'):''}" onclick="${fn}">${t}</button>`;
@@ -452,10 +466,12 @@ function secDiario(ak){
 }
 function secEstudantes(){
   const m={};flat.forEach(r=>{const k=r.estudante.trim().toUpperCase()+'___'+(r.mat||'').trim().toUpperCase();const d=dataReg(r);
-    if(!m[k])m[k]={n:r.estudante.trim(),mat:r.mat||'',d:null,c:''};if(r.frequencia&&(!m[k].d||d>=m[k].d)){m[k].d=d;m[k].c=r.componente||''}});
+    if(!m[k])m[k]={n:r.estudante.trim(),mat:r.mat||'',d:null,c:'',p:''};
+    if(r.frequencia&&(!m[k].d||d>=m[k].d)){m[k].d=d;m[k].c=r.componente||r.tipo||'';m[k].p=r.professor||''}
+  });
   const l=Object.values(m).sort((a,b)=>a.n.localeCompare(b.n));
-  return `<div class="sum"><div class="t">Estudantes — ${S.ano}</div><div class="d"><span>Total: <strong>${l.length}</strong></span></div></div><div class="tc"><table class="exp"><thead><tr><th>Ord.</th><th>Estudante</th><th>Número de matrícula</th><th>Última frequência</th><th>Último componente curricular</th></tr></thead><tbody>${
-   l.map((a,i)=>`<tr><td class="o">${i+1}</td><td class="l">${esc(a.n)}</td><td>${esc(a.mat)}</td><td>${fmt(a.d)}</td><td class="l">${esc(a.c)}</td></tr>`).join('')||'<tr><td colspan=5 class="nd">Sem estudantes.</td></tr>'}</tbody></table></div>`;
+  return `<div class="sum"><div class="t">Estudantes — ${S.ano}</div><div class="d"><span>Total: <strong>${l.length}</strong></span></div></div><div class="tc"><table class="exp"><thead><tr><th>ORD.</th><th>ESTUDANTE</th><th>NÚMERO<br>DE MATRÍCULA</th><th>ÚLTIMA<br>FREQUÊNCIA</th><th>ÚLTIMO<br>COMPONENTE<br>CURRICULAR</th><th>ÚLTIMO<br>PROFESSOR</th><th>AÇÃO</th></tr></thead><tbody>${
+   l.map((a,i)=>`<tr><td class="o">${i+1}</td><td class="l">${esc(a.n)}</td><td>${esc(a.mat)}</td><td>${fmt(a.d)}</td><td class="l">${esc(a.c)}</td><td class="l">${esc(a.p)}</td><td class="del-aluno"><button class="btn sm delete-student" data-nome="${esc(a.n)}" data-mat="${esc(a.mat)}" onclick="excluirAlunoBotao(this)">🗑 Excluir aluno</button></td></tr>`).join('')||'<tr><td colspan=7 class="nd">Sem estudantes.</td></tr>'}</tbody></table></div>`;
 }
 const sKey=(n,mat)=>((n||'').trim().toUpperCase()+'___'+((mat||'').trim().toUpperCase()||'SEM_MAT')).replace(/[.#$/[\]]/g,'_');
 function secSituacao(ak){
@@ -467,8 +483,8 @@ function secSituacao(ak){
   const ic={ATIVO:'🟢',PRE_EVADIDO:'🟡',EVADIDO:'🔴',CONCLUDENTE:'🔵'};
   let h=`<div class="sc">${C.map(c=>`<div class="scard ${S.sit===c[0]?'on':''}" onclick="S.sit='${c[0]}';render()"><div style="font-size:1.6rem">${c[1]}</div><b>${c[2]}</b><span>${c[3]}</span><div class="chip" style="margin-top:6px">${g[c[0]].length} alunos</div></div>`).join('')}</div>`;
   const l=g[S.sit].sort((a,b)=>a.n.localeCompare(b.n));
-  return h+`<div class="tc"><table class="exp"><thead><tr><th>Ord.</th><th>Status</th><th>Estudante</th><th>Matrícula</th><th>Última frequência</th><th>Dias decorridos</th><th>Data da conclusão</th><th>Conclusão</th></tr></thead><tbody>${
-   l.map((a,i)=>`<tr><td class="o">${i+1}</td><td>${ic[S.sit]}</td><td class="l">${esc(a.n)}</td><td>${esc(a.mat)}</td><td>${fmt(a.d)}</td><td>${a.d?a.dias:'-'}</td><td>${esc(a.dc||'-')}</td><td><button class="btn sm ${S.sit==='CONCLUDENTE'?'alt':''}" onclick="concluir('${a.k}',${S.sit==='CONCLUDENTE'})">${S.sit==='CONCLUDENTE'?'Reabrir':'Concluir'}</button></td></tr>`).join('')||'<tr><td colspan=8 class="nd">Nenhum estudante nesta situação.</td></tr>'}</tbody></table></div>`;
+  return h+`<div class="tc"><table class="exp"><thead><tr><th>ORD.</th><th>STATUS</th><th>ESTUDANTE</th><th>MATRÍCULA</th><th>ÚLTIMA<br>FREQUÊNCIA</th><th>DIAS<br>DECORRIDOS</th><th>DATA DA<br>CONCLUSÃO</th><th>CONCLUSÃO</th><th>AÇÃO</th></tr></thead><tbody>${
+   l.map((a,i)=>`<tr><td class="o">${i+1}</td><td>${ic[S.sit]}</td><td class="l">${esc(a.n)}</td><td>${esc(a.mat)}</td><td>${fmt(a.d)}</td><td>${a.d?a.dias:'-'}</td><td>${esc(a.dc||'-')}</td><td><button class="btn sm ${S.sit==='CONCLUDENTE'?'alt':''}" onclick="concluir('${a.k}',${S.sit==='CONCLUDENTE'})">${S.sit==='CONCLUDENTE'?'Reabrir':'Concluir'}</button></td><td class="del-aluno"><button class="btn sm delete-student" data-nome="${esc(a.n)}" data-mat="${esc(a.mat)}" onclick="excluirAlunoBotao(this)">🗑 Excluir aluno</button></td></tr>`).join('')||'<tr><td colspan=9 class="nd">Nenhum estudante nesta situação.</td></tr>'}</tbody></table></div>`;
 }
 function concluir(k,reabrir){const r=db.ref(`situacaoAlunos/${S.ano}/${akey(S.area)}/${k}`);reabrir?r.remove():r.set({concluido:true,data:new Date().toLocaleDateString('pt-BR')})}
 function secMensal(ak){
@@ -512,11 +528,21 @@ function removerProf(id){const p=professores[id];if(p&&confirm('Remover '+p.nome
 /* ---------- TABELA DE ATENDIMENTO DIÁRIO (professor e secretaria) ---------- */
 const tiposArea=()=>TIPOS_AREA[S.area]||TIPOS.map((_,i)=>i);
 function buildSit(){SIT={};const ak=akey(S.area);flat.filter(r=>r.ak===ak).forEach(r=>{const k=sKey(r.estudante,r.mat),d=dataReg(r),o=SIT[k]||(SIT[k]={d:null});if(r.frequencia&&(!o.d||d>o.d))o.d=d})}
-function sitDe(n,m){if(!(n||'').trim())return '';const k=sKey(n,m),c=sitCache[k];if(c&&c.concluido)return '🔵 Concludente';const o=SIT[k];if(!o)return '⚪ Novo';const d=o.d?Math.floor((new Date()-o.d)/864e5):999;return d<=30?'🟢 Ativo':d<60?'🟡 Pré-evadido':'🔴 Evadido'}
+function sitDe(n,m){
+  if(!(n||'').trim()) return '';
+  const k=sKey(n,m),o=SIT[k];
+  if(!o||!o.d) return '⚪ Sem frequência registrada';
+  const hoje0=new Date();hoje0.setHours(0,0,0,0);
+  const ultima=new Date(o.d);ultima.setHours(0,0,0,0);
+  const d=Math.max(0,Math.floor((hoje0-ultima)/864e5));
+  if(d<=30) return '🟢 Ativo';
+  if(d>=31 && d<=59) return '🟡 Pré-Evadido';
+  return '🔴 Evadido';
+}
 function refDe(tr){const b=`${S.ano}/${S.mes}/${S.dia}/${akey(S.area)}`;return db.ref(tr.dataset.src==='L'?`frequencias/${b}/${tr.dataset.key}`:`atend/${b}/${tr.dataset.pid}/${tr.dataset.key}`)}
 function mountEd(host){
   const ti=tiposArea();
-  host.innerHTML=`<div class="tc"><table class="ed"><thead><tr><th class="col-ord">ORDEM</th><th class="col-mat">MATRÍCULA</th><th class="col-est">NOME DO ESTUDANTE</th><th class="col-data">DATA</th><th class="col-prof">PROFESSOR QUE ATENDEU</th>${livre(S.area)?'<th class="col-forma">FORMA DE ATENDIMENTO (DIGITADA)</th>':ti.map(i=>`<th class="col-tipo">${TIPOS[i]}</th>`).join('')}<th class="col-pres">PRESENÇA</th><th class="col-sit">SITUAÇÃO DO ESTUDANTE</th><th class="no-exp"></th></tr></thead><tbody class="edb"></tbody></table></div><div class="ed-actions"><button class="btn sm" onclick="maisLinha(this)">➕ Adicionar 1 linha</button><button class="btn sm warn" onclick="retirarLinha(this)">➖ Retirar 1 linha</button><button class="btn sm save" onclick="salvarAlteracoesTela()">💾 Salvar alterações</button><span class="line-status" id="edStatus"></span></div>`;
+  host.innerHTML=`<div class="tc"><table class="ed"><thead><tr><th class="col-ord">ORDEM</th><th class="col-mat">MATRÍCULA<br>(até 6)</th><th class="col-est">NOME DO<br>ESTUDANTE</th><th class="col-data">DATA</th><th class="col-prof">PROFESSOR<br>QUE ATENDEU</th>${livre(S.area)?'<th class="col-forma">FORMA DE<br>ATENDIMENTO<br>(DIGITADA)</th>':ti.map(i=>`<th class="col-tipo">${TIPOS[i]}</th>`).join('')}<th class="col-pres">PRESENÇA</th><th class="col-sit">SITUAÇÃO DO<br>ESTUDANTE</th><th class="no-exp">AÇÕES</th></tr></thead><tbody class="edb"></tbody></table></div><div class="ed-actions"><button class="btn sm" onclick="maisLinha(this)">➕ Adicionar 1 linha</button><button class="btn sm warn" onclick="retirarLinha(this)">➖ Retirar 1 linha</button><button class="btn sm save" onclick="salvarAlteracoesTela()">💾 Salvar alterações</button><span class="line-status" id="edStatus"></span></div><div class="status-legend"><strong>Situação:</strong> 🟢 Ativo = frequência até 30 dias &nbsp; | &nbsp; 🟡 Pré-Evadido = 31 a 59 dias sem frequência &nbsp; | &nbsp; 🔴 Evadido = 60 dias ou mais sem frequência</div>`;
   const tb=host.querySelector('.edb'),rs=ED.rs||[],tot=Math.max(30,S.rows,rs.length);for(let i=0;i<tot;i++)addRow(tb,rs[i]);
 }
 function renumRows(tb){[...tb.children].forEach((tr,i)=>{const c=tr.querySelector('.col-ord');if(c)c.textContent=i+1})}
@@ -529,7 +555,7 @@ function retirarLinha(b){
 function addRow(tb,r){
   r=r||{frequencia:false};const tr=document.createElement('tr'),ti=tiposArea(),ts=tiposDe(r);
   tr.dataset.key=r.key||'';tr.dataset.pid=r.pid||'';tr.dataset.src=r.src||'';tr.dataset.ts=r.ts||'';
-  const inp=f=>`<td class="${f==='mat'?'col-mat':'col-est'}"><input class="ci" data-f="${f}" value="${esc(r[f]||'')}" oninput="ac(event,'${f}')" onchange="salvarLinha(this)" autocomplete="off"></td>`;
+  const inp=f=>`<td class="${f==='mat'?'col-mat':'col-est'}"><input class="ci" data-f="${f}" value="${esc(r[f]||'')}" ${f==='mat'?'maxlength="6" inputmode="numeric"':''} oninput="marcarDigitacao(this)" onchange="salvarLinha(this)" autocomplete="off"></td>`;
   let pc;
   if(ED.pid)pc=`<td class="l col-prof">${esc(ED.nome)}</td>`;
   else{
@@ -539,15 +565,16 @@ function addRow(tb,r){
     if(!cur&&(r.professor||'').trim()){cur='n:'+r.professor.trim();op.push([cur,r.professor.trim()])}
     pc=`<td class="col-prof"><select class="ci" data-f="prof" onchange="salvarLinha(this)"><option value="">— selecione —</option>${op.map(o=>`<option value="${esc(o[0])}" ${o[0]===cur?'selected':''}>${esc(o[1])}</option>`).join('')}</select></td>`;
   }
-  const tiposHtml=livre(S.area)?`<td class="col-forma"><input class="ci" data-f="forma" value="${esc(r.forma||r.tipo||'')}" oninput="ac(event,'forma')" onchange="salvarLinha(this)" autocomplete="off"></td>`:ti.map(i=>`<td class="col-tipo"><input type="checkbox" data-f="t" data-i="${i}" ${ts.includes(i)?'checked':''} onchange="salvarLinha(this)"></td>`).join('');
-  tr.innerHTML=`<td class="o col-ord">${tb.children.length+1}</td>${inp('mat')}${inp('estudante')}<td class="col-data">${S.dia}/${String(MESES.indexOf(S.mes)+1).padStart(2,'0')}/${S.ano}</td>${pc}${tiposHtml}<td class="col-pres"><input type="checkbox" data-f="freq" ${r.frequencia?'checked':''} onchange="salvarLinha(this)" aria-label="Presença"></td><td class="sit col-sit">${sitDe(r.estudante,r.mat)}</td><td class="no-exp"><button class="ib" title="Limpar linha" onclick="delLinha(this)">🗑</button></td>`;
+  const tiposHtml=livre(S.area)?`<td class="col-forma"><input class="ci" data-f="forma" value="${esc(r.forma||r.tipo||'')}" oninput="marcarDigitacao(this)" onchange="salvarLinha(this)" autocomplete="off"></td>`:ti.map(i=>`<td class="col-tipo"><input type="checkbox" data-f="t" data-i="${i}" ${ts.includes(i)?'checked':''} onchange="salvarLinha(this)"></td>`).join('');
+  tr.innerHTML=`<td class="o col-ord">${tb.children.length+1}</td>${inp('mat')}${inp('estudante')}<td class="col-data">${S.dia}/${String(MESES.indexOf(S.mes)+1).padStart(2,'0')}/${S.ano}</td>${pc}${tiposHtml}<td class="col-pres"><input type="checkbox" data-f="freq" ${r.frequencia?'checked':''} onchange="salvarLinha(this)" aria-label="Presença"></td><td class="sit col-sit">${sitDe(r.estudante,r.mat)}</td><td class="no-exp"><button class="ib" title="Excluir este atendimento" onclick="delLinha(this)">🗑</button><button class="ib" title="Excluir o aluno deste ano" onclick="excluirAlunoDaLinha(this)">👤</button></td>`;
   tb.appendChild(tr);
 }
-function ac(e,f){const i=e.target,v=i.value;if((e.inputType||'').startsWith('delete')||!v.trim())return;const m=(SUG[f]||[]).find(x=>x.toUpperCase().startsWith(v.toUpperCase()));if(m){i.value=m;i.setSelectionRange(v.length,m.length)}}
+function marcarDigitacao(i){i.dataset.dirty='1'}
+function ac(){return} // mantido por compatibilidade com versões anteriores; não substitui o que o usuário digitou
+
 function salvarLinha(el){
   const tr=el.closest('tr'),g=f=>tr.querySelector(`[data-f="${f}"]`),f=el.dataset.f;let mat=g('mat').value.trim(),est=g('estudante').value.trim();
-  if(f==='estudante'){const inf=alunoInfo[est.toUpperCase()];if(inf&&!mat&&inf.mat){mat=inf.mat;g('mat').value=mat}}
-  if(f==='mat'&&mat&&!est){const x=flat.find(r=>(r.mat||'').trim()===mat&&(r.estudante||'').trim());if(x){est=x.estudante.trim();g('estudante').value=est}}
+  // A matrícula e o nome são independentes: o sistema nunca substitui o que o usuário digitou.
   const tipos=[...tr.querySelectorAll('[data-f="t"]:checked')].map(c=>TIPOS[+c.dataset.i]),freq=!!g('freq').checked,forma=livre(S.area)?normF(g('forma').value):'';
   let pid,nome;if(ED.pid){pid=ED.pid;nome=ED.nome}else{const v=g('prof').value;if(v.startsWith('n:')){pid='_sem';nome=v.slice(2)}else if(v){pid=v;nome=(professores[v]||{}).nome||''}else{pid='_sem';nome=''}}
   if(!(est||mat||tipos.length||forma)){if(tr.dataset.key)refDe(tr).remove();tr.dataset.key='';tr.dataset.src='';tr.dataset.pid='';tr.dataset.ts='';tr.querySelector('.sit').textContent='';return Promise.resolve()}
@@ -564,6 +591,40 @@ async function salvarAlteracoesTela(){
 function delLinha(b){
   const tr=b.closest('tr'),acao=tr.dataset.key?'Excluir o atendimento desta linha?':'Limpar esta linha?';if(!confirm(acao))return;
   Promise.resolve(tr.dataset.key?refDe(tr).remove():null).then(()=>{tr.dataset.key='';tr.dataset.src='';tr.dataset.ts='';tr.dataset.pid='';tr.querySelectorAll('input.ci').forEach(i=>i.value='');const sl=tr.querySelector('select');if(sl)sl.value='';tr.querySelectorAll('[data-f="t"],[data-f="freq"]').forEach(c=>c.checked=false);tr.querySelector('.sit').textContent=''})}
+function mesmoAlunoRegistro(r,nome,mat){
+  if(normNome(r&&r.estudante)!==normNome(nome))return false;
+  const alvo=(mat||'').trim();
+  return !alvo||String(r.mat||'').trim()===alvo;
+}
+async function excluirAlunoAtual(nome,mat){
+  nome=(nome||'').trim();mat=(mat||'').trim();
+  if(!nome&&!mat)return;
+  const alvo=nome||'aluno';
+  if(!confirm(`Excluir o aluno ${alvo}${mat?` — matrícula ${mat}`:''} de todos os registros do ano ${S.ano}?\n\nTodos os atendimentos deste aluno no ano selecionado serão removidos. Essa ação não pode ser desfeita.`))return;
+  const updates={};
+  Object.entries(dadosAtend).forEach(([mes,md])=>Object.entries(md||{}).forEach(([dia,dd])=>Object.entries(dd||{}).forEach(([ak,ad])=>Object.entries(ad||{}).forEach(([pid,pd])=>Object.entries(pd||{}).forEach(([k,r])=>{
+    if(mesmoAlunoRegistro(r,nome,mat))updates[`atend/${S.ano}/${mes}/${dia}/${ak}/${pid}/${k}`]=null;
+  })))));
+  Object.entries(dadosLegacy).forEach(([mes,md])=>Object.entries(md||{}).forEach(([dia,dd])=>Object.entries(dd||{}).forEach(([ak,ad])=>Object.entries(ad||{}).forEach(([k,r])=>{
+    if(mesmoAlunoRegistro(r,nome,mat))updates[`frequencias/${S.ano}/${mes}/${dia}/${ak}/${k}`]=null;
+  }))));
+  const sit=await db.ref(`situacaoAlunos/${S.ano}`).once('value');
+  Object.entries(sit.val()||{}).forEach(([ak,areaData])=>Object.keys(areaData||{}).forEach(k=>{
+    const parts=k.split('___');
+    const kn=parts[0]||'',km=parts.slice(1).join('___');
+    if(normNome(kn)===normNome(nome)&&( !mat || km===mat.toUpperCase() || km==='SEM_MAT'))updates[`situacaoAlunos/${S.ano}/${ak}/${k}`]=null;
+  }));
+  if(Object.keys(updates).length)await db.ref().update(updates);
+  alert(`Aluno ${alvo} excluído dos registros do ano ${S.ano}.`);
+}
+function excluirAlunoBotao(b){const nome=b.dataset.nome||'',mat=b.dataset.mat||'';excluirAlunoAtual(nome,mat)}
+function excluirAlunoDaLinha(b){
+  const tr=b.closest('tr');if(!tr)return;
+  const nome=(tr.querySelector('[data-f="estudante"]')||{}).value||'';
+  const mat=(tr.querySelector('[data-f="mat"]')||{}).value||'';
+  excluirAlunoAtual(nome,mat);
+}
+
 function renderProf(){
   const p=professores[S.prof];if(!p)return;const ak=akey(p.area),N=p.nome.trim().toUpperCase(),meus=flat.filter(r=>r.ak===ak&&(r.pid===S.prof||(r.src==='L'&&pn(r)===N)));
   $('profFilt').innerHTML=filtroAno()+filtroMes()+filtroDia();$('profDia').innerHTML=chips(contar(meus.filter(r=>r.mes===S.mes&&r.dia===S.dia)));$('profMes').innerHTML=chips(contar(meus.filter(r=>r.mes===S.mes)));
