@@ -3,13 +3,12 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>CEJA Dr. Gerardo Camelo Madeira - Atendimento Diário V7</title>
+<title>CEJA Dr. Gerardo Camelo Madeira - Atendimento Diário — Supabase Realtime</title>
 <meta name="theme-color" content="#0b5736">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <link rel="icon" id="fav"><link rel="apple-touch-icon" id="aicon"><link rel="manifest" id="pwaManifest">
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <style>
 :root{--g:#0b5736;--gbg:#073822;--gl:#15803d;--gold:#ca8a04;--red:#dc2626;--blue:#2563eb;--bd:#cbd5e1}
 *{box-sizing:border-box;margin:0;padding:0;font-family:Georgia,'Times New Roman',serif}
@@ -92,18 +91,20 @@ body,input,select,button,table{font-family:"Times New Roman",Georgia,serif}
 table.ed{table-layout:fixed;min-width:1450px}
 table.ed th{vertical-align:middle}
 table.ed th,table.exp th{white-space:normal;line-height:1.12;word-break:normal;overflow-wrap:anywhere;vertical-align:middle}
-table.ed{table-layout:fixed;min-width:1550px}
+table.ed{table-layout:fixed;min-width:1980px}
 table.ed th.col-ord,table.ed td.col-ord{width:55px}
+table.ed th.col-nivel,table.ed td.col-nivel{width:145px}
 table.ed th.col-mat,table.ed td.col-mat{width:70px}
-table.ed th.col-est,table.ed td.col-est{width:410px}
+table.ed th.col-est,table.ed td.col-est{width:360px}
 table.ed th.col-data,table.ed td.col-data{width:98px}
-table.ed th.col-prof,table.ed td.col-prof{width:235px}
+table.ed th.col-prof,table.ed td.col-prof{width:220px}
 table.ed th.col-forma,table.ed td.col-forma{width:285px}
 table.ed th.col-tipo,table.ed td.col-tipo{width:112px}
+table.ed th.col-avaliacao,table.ed td.col-avaliacao{width:250px}
 table.ed th.col-pres,table.ed td.col-pres{width:68px}
 table.ed th.col-sit,table.ed td.col-sit{width:122px}
 table.ed th.col-acao,table.ed td.col-acao{width:82px}
-table.ed td.col-mat input.ci,table.ed td.col-est input.ci,table.ed td.col-prof input.ci,table.ed td.col-prof select.ci,table.ed td.col-forma input.ci{min-width:0!important;width:100%}
+table.ed td.col-nivel input.ci,table.ed td.col-mat input.ci,table.ed td.col-est input.ci,table.ed td.col-prof input.ci,table.ed td.col-prof select.ci,table.ed td.col-forma input.ci,table.ed td.col-avaliacao input.ci{min-width:0!important;width:100%}
 table.ed td.col-mat input.ci{max-width:68px;text-align:center}
 table.ed td.col-pres input[type=checkbox]{width:17px;height:17px}
 table.ed td.col-sit{white-space:normal;font-size:.78rem}
@@ -120,7 +121,14 @@ table.exp td{overflow-wrap:anywhere;word-break:normal}
 .btn.save{background:#166534}.btn.save:hover{background:#14532d}
 .btn.warn{background:#b45309}.btn.warn:hover{background:#92400e}
 .line-status{font-size:.78rem;color:#166534;font-weight:600;min-height:1em}
-@media(max-width:900px){table.ed{min-width:1320px}table.ed th.col-est,table.ed td.col-est{width:300px}table.ed th.col-prof,table.ed td.col-prof{width:200px}table.ed th.col-forma,table.ed td.col-forma{width:245px}}
+.history-sub{display:block;margin-top:3px;color:#64748b;font-size:.74rem;font-weight:normal}
+.history-empty{color:#64748b;font-style:italic}
+table.student-history{min-width:1050px}
+table.student-history th.ex-est,table.student-history td.ex-est{width:30%}
+table.student-history th.ex-data,table.student-history td.ex-data{width:16%}
+table.student-history th.ex-mat,table.student-history td.ex-mat{width:12%}
+table.student-history td{vertical-align:middle}
+@media(max-width:900px){table.ed{min-width:1780px}table.ed th.col-est,table.ed td.col-est{width:300px}table.ed th.col-prof,table.ed td.col-prof{width:200px}table.ed th.col-forma,table.ed td.col-forma{width:245px}table.ed th.col-avaliacao,table.ed td.col-avaliacao{width:230px}}
 
 </style>
 </head>
@@ -182,7 +190,7 @@ table.exp td{overflow-wrap:anywhere;word-break:normal}
     <div class="us"><span>Conectado como <strong>Secretaria</strong></span><button onclick="alterarSenhaSec()">Alterar senha</button><button onclick="sair()">Sair</button></div>
   </header>
   <main>
-    <div class="bar"><button class="btn sm save" onclick="salvarAlteracoesTela()">💾 Salvar alterações</button><button class="btn sm" onclick="exportar('pdf')">📄 Exportar PDF</button><button class="btn sm alt" onclick="exportar('word')">📝 Exportar Word</button><span class="badge sync-badge" id="syncBadgeSec">Modo online: Sincronizando…</span></div>
+    <div class="bar"><button class="btn sm save" onclick="salvarAlteracoesTela()">💾 Salvar alterações</button><button class="btn sm" onclick="exportar('pdf')">📄 Exportar PDF</button><button class="btn sm alt" onclick="exportar('word')">📝 Exportar Word</button><button class="btn sm alt" onclick="$('firebaseBackupInput').click()">📥 Importar backup Firebase</button><input id="firebaseBackupInput" class="hidden" type="file" accept="application/json,.json" onchange="importarBackupFirebase(this)"><span class="badge sync-badge" id="syncBadgeSec">Modo online: Sincronizando…</span></div>
     <div id="secBody"></div>
   </main>
 </div>
@@ -212,52 +220,158 @@ setTimeout(()=>{try{preencherLoginProf();preencherLoginSec()}catch(e){}},50);
 document.getElementById('fav').href=LOGO;document.getElementById('aicon').href=LOGO;
 document.getElementById('pwaManifest').href=URL.createObjectURL(new Blob([JSON.stringify({name:"CEJA Dr. Gerardo Camelo Madeira",short_name:"CEJA Atendimento",start_url:"./",display:"standalone",background_color:"#073822",theme_color:"#0b5736",icons:[{src:LOGO,sizes:"320x320",type:"image/jpeg"}]})],{type:'application/json'}));
 
-firebase.initializeApp({apiKey:"AIzaSyCg7l7axov73nQU1qlIG3NBWw8SWrPFX4",authDomain:"atendimentos-ceja.firebaseapp.com",databaseURL:"https://atendimentos-ceja-default-rtdb.firebaseio.com",projectId:"atendimentos-ceja",storageBucket:"atendimentos-ceja.firebasestorage.app",messagingSenderId:"330609197724",appId:"1:330609197724:web:45b030f4c6f1cc5faf6359"});
-const db=firebase.database();
-const connRef=db.ref('.info/connected');
-connRef.on('value',snap=>{
-  const online=!!snap.val();
-  document.querySelectorAll('.sync-badge').forEach(el=>{
-    el.textContent=online?'Modo online: Sincronizado em tempo real':'Modo offline: aguardando conexão';
-    el.style.color=online?'#047857':'#9a3412';
-    el.style.background=online?'#d1fae5':'#ffedd5';
-    el.style.borderColor=online?'#a7f3d0':'#fed7aa';
-  });
+// ===== Supabase: armazenamento seguro + adaptador compatível com o código original =====
+const SUPABASE_URL = 'https://kutcunfxpmrclrxnsoim.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_OwIvGOLgWInfA6o_XcKPTQ_b7quMsTV';
+const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
+  auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
 });
+const AUTH = { token: '', sessionId: '', identity: null };
+const CLIENT_ID = (() => {
+  try {
+    let id = sessionStorage.getItem('ceja_client_id');
+    if (!id) { id = crypto.randomUUID(); sessionStorage.setItem('ceja_client_id', id); }
+    return id;
+  } catch (_) { return crypto.randomUUID(); }
+})();
+const dataListeners = new Set();
+const normalizePath = p => String(p || '').split('/').filter(Boolean).join('/');
+function snapshotOf(value) { return { val: () => value == null ? null : value, exists: () => value != null }; }
+function updateSyncBadge(online) {
+  document.querySelectorAll('.sync-badge').forEach(el => {
+    el.textContent = online ? 'Supabase: sincronização em tempo real ativa' : 'Supabase: conectando…';
+    el.style.color = online ? '#047857' : '#9a3412';
+    el.style.background = online ? '#d1fae5' : '#ffedd5';
+    el.style.borderColor = online ? '#a7f3d0' : '#fed7aa';
+  });
+}
+async function supabaseRpc(name, args) {
+  const { data, error } = await supabaseClient.rpc(name, args);
+  if (error) throw new Error(error.message || `Falha na operação ${name}`);
+  return data;
+}
+async function readPath(path) {
+  if (!AUTH.token) throw new Error('Sua sessão terminou. Entre novamente.');
+  return await supabaseRpc('ceja_data_read', { p_token: AUTH.token, p_path: normalizePath(path) });
+}
+async function writePath(path, operation, value) {
+  if (!AUTH.token) throw new Error('Sua sessão terminou. Entre novamente.');
+  return await supabaseRpc('ceja_data_write', {
+    p_token: AUTH.token,
+    p_path: normalizePath(path),
+    p_operation: operation,
+    p_value: value === undefined ? null : value,
+    p_client_id: CLIENT_ID
+  });
+}
+async function refreshOneListener(listener) {
+  if (!AUTH.token || !dataListeners.has(listener)) return;
+  try {
+    const value = await readPath(listener.path);
+    if (dataListeners.has(listener)) listener.callback(snapshotOf(value));
+  } catch (error) {
+    console.error('Erro ao atualizar dados Supabase:', error);
+    if (/sessão|session|token/i.test(error.message || '')) {
+      updateSyncBadge(false);
+    }
+  }
+}
+function signalMatches(listener, signal) {
+  if (!signal || !signal.data_root) return true;
+  const bits = listener.path.split('/').filter(Boolean);
+  if ((bits[0] || '') !== signal.data_root) return false;
+  if (signal.scope_key && bits.length > 1 && bits[1] !== String(signal.scope_key)) return false;
+  return true;
+}
+async function refreshMatchingListeners(signal) {
+  if (!AUTH.token) return;
+  const jobs = [];
+  dataListeners.forEach(listener => {
+    if (signalMatches(listener, signal)) jobs.push(refreshOneListener(listener));
+  });
+  await Promise.allSettled(jobs);
+}
+const realtimeChannel = supabaseClient.channel('ceja-public-sync-signal').on(
+  'postgres_changes',
+  { event: 'UPDATE', schema: 'public', table: 'ceja_sync', filter: 'id=eq.1' },
+  payload => {
+    const signal = payload && payload.new;
+    if (!signal) return;
+    if (signal.actor_client_id && String(signal.actor_client_id) === String(CLIENT_ID)) return;
+    refreshMatchingListeners(signal);
+  }
+).subscribe(status => updateSyncBadge(status === 'SUBSCRIBED'));
 
-const PROFESSORES_BASE=[
-['Aline Dantas Moreira','LINGUAGENS','12345'],
-['Ana Gardênia Ximenes Dias','LINGUAGENS','678910'],
-['Francisco de Assis Martins Passos','LINGUAGENS','111213'],
-['Glaucia Paiva Timbó','LINGUAGENS','141516'],
-['José Airton Ferreira de Mesquita','LINGUAGENS','171819'],
-['Marcília Felipe da Costa','LINGUAGENS','202122'],
-['Maria Siloneida de Farias','LINGUAGENS','232425'],
-['Maria Suely Rodrigues Araujo','LINGUAGENS','262728'],
-['Pedro Furtuna da Silva','LINGUAGENS','293031'],
-['Ana Jéssica Martins Matos','CIÊNCIAS DA NATUREZA E MATEMÁTICA','323334'],
-['Antonio Helio Pereira de Farias','CIÊNCIAS DA NATUREZA E MATEMÁTICA','343536'],
-['Carlos Ely Costa Dias','CIÊNCIAS DA NATUREZA E MATEMÁTICA','373839'],
-['Francisco José Bezerra Felizola','CIÊNCIAS DA NATUREZA E MATEMÁTICA','404142'],
-['Itala Futado Dias','CIÊNCIAS DA NATUREZA E MATEMÁTICA','434445'],
-['Maria Sueli Bernardo de Lima','CIÊNCIAS DA NATUREZA E MATEMÁTICA','464748'],
-['Reinaldo Inacio Barbalho','CIÊNCIAS DA NATUREZA E MATEMÁTICA','495051'],
-['Sabrina Farias Camelo','CIÊNCIAS DA NATUREZA E MATEMÁTICA','525354'],
-['Aldânia Maria de Melo Lima Soares','CIÊNCIAS HUMANAS','555657'],
-['Antonia Carla Victor de Paiva','CIÊNCIAS HUMANAS','585960'],
-['Carliana Lima Almeida','CIÊNCIAS HUMANAS','616263'],
-['Silvia Helena Peres Dias','CIÊNCIAS HUMANAS','646566'],
-['Tatiana Maria de Aragão Paiva','MULTIMEIOS','676869'],
-['Gonçalinha Rodrigues Martins','MULTIMEIOS','707172'],
-['Samuel Martins de Sousa','LEI','000000']
-];
-const SENHA_SECRETARIA='Ceja23231939',SENHA_LEGACY='12345';
+// Interface reduzida compatível com os usos de db.ref() encontrados no index original.
+const db = {
+  ref(path = '') {
+    const clean = normalizePath(path);
+    const ref = {
+      path: clean,
+      get key() { const parts = clean.split('/').filter(Boolean); return parts.length ? parts[parts.length - 1] : null; },
+      child(key) { return db.ref([clean, String(key)].filter(Boolean).join('/')); },
+      push() {
+        const key = crypto.randomUUID().replace(/-/g, '');
+        return db.ref([clean, key].filter(Boolean).join('/'));
+      },
+      async once(event) {
+        if (event !== 'value') throw new Error('Este sistema aceita apenas eventos value em once().');
+        return snapshotOf(await readPath(clean));
+      },
+      on(event, callback) {
+        if (event !== 'value' || typeof callback !== 'function') throw new Error('Listener inválido.');
+        const listener = { path: clean, callback, ref: this };
+        dataListeners.add(listener);
+        refreshOneListener(listener);
+        return this;
+      },
+      off(event) {
+        dataListeners.forEach(listener => {
+          if (listener.ref === this || listener.path === clean) dataListeners.delete(listener);
+        });
+      },
+      set(value) { return writePath(clean, 'set', value); },
+      update(value) { return writePath(clean, 'update', value); },
+      remove() { return writePath(clean, 'remove', null); }
+    };
+    return ref;
+  }
+};
+
+async function ativarSessao(info, keep, tokenExistente) {
+  const token = info.access_token || tokenExistente;
+  if (!token || !info.user_id || !info.role) throw new Error('Resposta de login incompleta.');
+  AUTH.token = token;
+  AUTH.sessionId = info.session_id || '';
+  AUTH.identity = { ...info, access_token: token };
+  salvarSessao({ role: info.role, id: info.user_id, accessToken: token }, keep);
+  professores = (await db.ref('professores').once('value')).val() || {};
+  montarLoginProfessorDireto();
+  if (info.role === 'sec') abrirSec();
+  else { S.viaSec = false; abrirProf(info.user_id); }
+  dataListeners.forEach(listener => refreshOneListener(listener));
+}
+async function restaurarSessaoSalva() {
+  let saved;
+  try { saved = JSON.parse(localStorage.getItem('cejaSess') || 'null'); } catch (_) { saved = null; }
+  if (!saved || !saved.accessToken) return;
+  try {
+    AUTH.token = saved.accessToken;
+    const info = await supabaseRpc('ceja_session_info', { p_token: saved.accessToken });
+    await ativarSessao(info, true, saved.accessToken);
+  } catch (error) {
+    AUTH.token = ''; AUTH.sessionId = ''; AUTH.identity = null;
+    localStorage.removeItem('cejaSess');
+    console.warn('Sessão salva expirou; será necessário entrar novamente.', error);
+  }
+}
+
 const MESES=["JANEIRO","FEVEREIRO","MARÇO","ABRIL","MAIO","JUNHO","JULHO","AGOSTO","SETEMBRO","OUTUBRO","NOVEMBRO","DEZEMBRO"];
 const AREAS=['LINGUAGENS','CIÊNCIAS DA NATUREZA E MATEMÁTICA','CIÊNCIAS HUMANAS','LEI','MULTIMEIOS'];
 const TIPOS=['Avaliação','Redação','Intervenção Pedagógica','Prática em Linguagens','Prática em Ciências da Natureza','Prática em Matemática','Prática em Ciências Humanas'];
 const TIPOS_PL=['Avaliações','Redações','Intervenções Pedagógicas','Práticas em Linguagens','Práticas em Ciências da Natureza','Práticas em Matemática','Práticas em Ciências Humanas'];
 const TIPOS_CURTO=['Avaliações','Redações','Interv. Pedag.','Prát. Linguagens','Prát. Ciên. Natureza','Prát. Matemática','Prát. Ciên. Humanas'];
-const TIPOS_AREA={'LINGUAGENS':[0,1,2,3],'CIÊNCIAS DA NATUREZA E MATEMÁTICA':[0,1,2,4,5],'CIÊNCIAS HUMANAS':[0,1,2,6]};
+const TIPOS_AREA={'LINGUAGENS':[0,1,2,3],'CIÊNCIAS DA NATUREZA E MATEMÁTICA':[0,2,4,5],'CIÊNCIAS HUMANAS':[0,2,6]};
 const ROT={DIARIO:'ATENDIMENTO DIÁRIO',ESTUDANTES:'ESTUDANTES',SITUACAO:'SITUAÇÃO DO ESTUDANTE',MENSAL:'ATENDIMENTO MENSAL',PROFESSORES:'PROFESSORES'};
 
 const $=id=>document.getElementById(id);
@@ -267,28 +381,24 @@ const hoje=new Date();
 const S={rows:30,role:null,prof:null,viaSec:false,ano:String(hoje.getFullYear()),mes:MESES[hoje.getMonth()],dia:String(hoje.getDate()).padStart(2,'0'),area:'LINGUAGENS',modo:'DIARIO',sub:'menu',profSel:null,sit:'ATIVO'};
 let professores={},dadosAtend={},dadosLegacy={},flat=[],sitCache={},SUG={estudante:[],mat:[],nivel:[],componente:[]},alunoInfo={};
 let ED={pid:null,nome:'',rs:[]},SIT={},pend=false,semeado=false;
+let historicoEscolarProf=false;
 let refA=null,refL=null,anoOuvido=null,refS=null,sitOuvido=null,bootDone=false;
-
-/* ---------- SENHAS ---------- */
-async function hsh(s){try{if(crypto&&crypto.subtle){const b=await crypto.subtle.digest('SHA-256',new TextEncoder().encode('ceja:'+s));return [...new Uint8Array(b)].map(x=>x.toString(16).padStart(2,'0')).join('')}}catch(e){}return 'p:'+s}
 
 /* ---------- LOGIN ---------- */
 const PROF_LOGIN_KEY='cejaProfLoginV3';
 const SEC_LOGIN_KEY='cejaSecLoginV3';
-const MAX_LOGIN_HISTORY=8;
-function getSavedLogins(key){try{const a=JSON.parse(localStorage.getItem(key)||'[]');return Array.isArray(a)?a:[]}catch(e){return []}}
-function setSavedLogins(key,a){try{localStorage.setItem(key,JSON.stringify(a.slice(0,MAX_LOGIN_HISTORY)))}catch(e){}}
-function salvarSenhaSecLocal(senha){if(!senha)return;let a=getSavedLogins(SEC_LOGIN_KEY);a=[{senha,quando:Date.now()},...a.filter(x=>x.senha!==senha)];setSavedLogins(SEC_LOGIN_KEY,a);renderLoginsSalvos()}
-function salvarSenhaProfLocal(nome,senha){if(!nome||!senha)return;let a=getSavedLogins(PROF_LOGIN_KEY+'History');a=[{nome,senha,quando:Date.now()},...a.filter(x=>!(normNome(x.nome)===normNome(nome)&&x.senha===senha))];setSavedLogins(PROF_LOGIN_KEY+'History',a);renderLoginsSalvos()}
-function apagarLoginSalvo(tipo,i){const key=tipo==='sec'?SEC_LOGIN_KEY:PROF_LOGIN_KEY+'History',a=getSavedLogins(key);a.splice(i,1);setSavedLogins(key,a);renderLoginsSalvos()}
-function acessarSenhaSalvaSec(i){const a=getSavedLogins(SEC_LOGIN_KEY);if(!a[i])return;$('secSenha').value=a[i].senha;$('keepSec').checked=true;entrarSec()}
-function acessarSenhaSalvaProf(i){const a=getSavedLogins(PROF_LOGIN_KEY+'History');if(!a[i])return;$('profNome').value=a[i].nome||'';$('profSenha').value=a[i].senha||'';$('keepProf').checked=true;loginTab('prof');entrarProf()}
-function preencherLoginSec(){try{const a=getSavedLogins(SEC_LOGIN_KEY);if(a[0]){$('secSenha').value=a[0].senha;$('keepSec').checked=true}}catch(e){}renderLoginsSalvos()}
-function renderLoginsSalvos(){
-  const sc=$('savedSec'),pc=$('savedProf');
-  if(sc){const a=getSavedLogins(SEC_LOGIN_KEY);sc.innerHTML=a.length?'<div class="saved-title">Acessos salvos da Secretaria</div>'+a.map((x,i)=>`<div class="saved-login-item"><button onclick="acessarSenhaSalvaSec(${i})">🔐 Acessar — senha salva ${new Date(x.quando).toLocaleDateString('pt-BR')}</button><button class="forget" onclick="apagarLoginSalvo('sec',${i})" title="Apagar senha salva">✕</button></div>`).join(''):''}
-  if(pc){const a=getSavedLogins(PROF_LOGIN_KEY+'History');pc.innerHTML=a.length?'<div class="saved-title">Acessos salvos dos professores</div>'+a.map((x,i)=>`<div class="saved-login-item"><button onclick="acessarSenhaSalvaProf(${i})">👩‍🏫 ${esc(x.nome)} — acessar ${new Date(x.quando).toLocaleDateString('pt-BR')}</button><button class="forget" onclick="apagarLoginSalvo('prof',${i})" title="Apagar senha salva">✕</button></div>`).join(''):''}
-}
+const MAX_LOGIN_HISTORY=0;
+// Por segurança, senhas não são mais armazenadas no localStorage.
+try { localStorage.removeItem(SEC_LOGIN_KEY); localStorage.removeItem(PROF_LOGIN_KEY); localStorage.removeItem(PROF_LOGIN_KEY+'History'); } catch (_) {}
+function getSavedLogins(){return []}
+function setSavedLogins(){}
+function salvarSenhaSecLocal(){}
+function salvarSenhaProfLocal(){}
+function apagarLoginSalvo(){renderLoginsSalvos()}
+function acessarSenhaSalvaSec(){}
+function acessarSenhaSalvaProf(){}
+function preencherLoginSec(){renderLoginsSalvos()}
+function renderLoginsSalvos(){const sc=$('savedSec'),pc=$('savedProf');if(sc)sc.innerHTML='';if(pc)pc.innerHTML=''}
 function registrarDigitacaoSec(){}
 function normNome(n){return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toUpperCase()}
 function slug(n){return 'p_'+normNome(n).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')}
@@ -300,64 +410,77 @@ function loginTab(t){
   $('tabProf').classList.toggle('on',t==='prof');
   $('tabSec').classList.toggle('hidden',t==='prof');
 }
-function preencherLoginProf(){
-  try{const a=getSavedLogins(PROF_LOGIN_KEY+'History');const saved=a[0]||JSON.parse(localStorage.getItem(PROF_LOGIN_KEY)||'null');if(saved){$('profNome').value=saved.nome||'';$('profSenha').value=saved.senha||'';$('keepProf').checked=true}}catch(e){}
-  renderLoginsSalvos();
+function preencherLoginProf(){renderLoginsSalvos()}
+function guardarPreenchimentoProf(){}
+
+function salvarSessao(o,keep){
+  try {
+    if(!o){localStorage.removeItem('cejaSess');AUTH.token='';AUTH.sessionId='';AUTH.identity=null;return;}
+    if(o.accessToken)AUTH.token=o.accessToken;
+    if(keep)localStorage.setItem('cejaSess',JSON.stringify(o));
+    else localStorage.removeItem('cejaSess');
+  } catch(e) { console.warn('Não foi possível salvar a sessão neste aparelho.',e); }
 }
-function guardarPreenchimentoProf(){
-  try{if($('keepProf')&&$('keepProf').checked&&$('profNome').value.trim()&&$('profSenha').value)localStorage.setItem(PROF_LOGIN_KEY,JSON.stringify({nome:$('profNome').value.trim(),senha:$('profSenha').value}));}catch(e){}
+async function entrarSec(){
+  const senha=$('secSenha').value;
+  $('errSec').textContent='';
+  try{
+    const data=await supabaseRpc('ceja_login',{p_role:'sec',p_name:'Secretaria',p_password:senha});
+    await ativarSessao(data,$('keepSec').checked);
+  }catch(e){console.error(e);$('errSec').textContent=/incorreta|inválid|login/i.test(e.message)?'Senha incorreta.':'Não foi possível entrar. Confira se o SQL do Supabase foi executado e tente novamente.'}
 }
-function salvarSessao(o,keep){try{if(keep)localStorage.setItem('cejaSess',JSON.stringify(o));else localStorage.removeItem('cejaSess')}catch(e){}}
-async function secOk(v){const f=await db.ref('config/secSenhaHash').once('value'),h=f.val();return h?h===await hsh(v):v===SENHA_SECRETARIA}
-async function entrarSec(){const senha=$('secSenha').value;if(!await secOk(senha)){$('errSec').textContent='Senha incorreta.';return}$('errSec').textContent='';salvarSenhaSecLocal(senha);salvarSessao({role:'sec'},$('keepSec').checked);abrirSec()}
 async function mudarSenhaSec(){
   const e=$('errSenhaSec');e.style.color='#dc2626';
-  if(!await secOk($('ssAtual').value)){e.textContent='Senha atual incorreta.';return}
-  const n=$('ssNova').value;if(n.length<6){e.textContent='A nova senha deve ter ao menos 6 caracteres.';return}
+  const atual=$('ssAtual').value,n=$('ssNova').value;
+  if(n.length<6){e.textContent='A nova senha deve ter ao menos 6 caracteres.';return}
   if(n!==$('ssConf').value){e.textContent='A confirmação não confere.';return}
-  salvarSenhaSecLocal($('ssAtual').value);salvarSenhaSecLocal(n);
-  await db.ref('config/secSenhaHash').set(await hsh(n));e.style.color='#047857';e.textContent='Nova senha da Secretaria criada com sucesso!';['ssAtual','ssNova','ssConf'].forEach(x=>$(x).value='')
+  try{
+    await supabaseRpc('ceja_change_password_by_login',{p_role:'sec',p_name:'Secretaria',p_current:atual,p_new:n});
+    e.style.color='#047857';e.textContent='Nova senha da Secretaria criada com sucesso!';
+    ['ssAtual','ssNova','ssConf'].forEach(x=>$(x).value='');
+  }catch(err){e.style.color='#dc2626';e.textContent=/atual|incorreta/i.test(err.message)?'Senha atual incorreta.':'Não foi possível alterar a senha. Confira a configuração do Supabase.'}
 }
 async function mudarSenhaProfLogin(){
   const e=$('errSenhaProf');e.style.color='#dc2626';
-  const nome=$('profNome').value.trim().replace(/\s+/g,' ');
-  const achado=nomeProfessorExiste(nome);
-  if(!achado){e.textContent='Digite primeiro o nome completo do professor cadastrado pela Secretaria.';return}
-  const id=achado[0];
-  if(!await senhaOk(id,$('psAtual').value)){e.textContent='Senha atual incorreta.';return}
-  const n=$('psNova').value;
+  const nome=$('profNome').value.trim().replace(/\s+/g,' '),atual=$('psAtual').value,n=$('psNova').value;
+  if(nome.length<3){e.textContent='Digite primeiro o nome completo do professor cadastrado pela Secretaria.';return}
   if(n.length<4){e.textContent='A nova senha deve ter ao menos 4 caracteres.';return}
   if(n!==$('psConf').value){e.textContent='A confirmação não confere.';return}
-  await db.ref('professores/'+id).update({senhaHash:await hsh(n),senhaAlteradaEm:Date.now(),senhaTemporaria:null});
-  salvarSenhaProfLocal(nome,n);
-  try{if($('keepProf').checked)localStorage.setItem(PROF_LOGIN_KEY,JSON.stringify({nome,senha:n}))}catch(e){}
-  e.style.color='#047857';e.textContent='Senha do professor alterada com sucesso!';['psAtual','psNova','psConf'].forEach(x=>$(x).value='');
+  try{
+    await supabaseRpc('ceja_change_password_by_login',{p_role:'prof',p_name:nome,p_current:atual,p_new:n});
+    salvarSenhaProfLocal(nome,n);
+    e.style.color='#047857';e.textContent='Senha do professor alterada com sucesso!';
+    ['psAtual','psNova','psConf'].forEach(x=>$(x).value='');
+  }catch(err){e.textContent=/atual|incorreta/i.test(err.message)?'Senha atual incorreta.':'Não foi possível alterar a senha. Confira nome e conexão.'}
 }
 async function alterarSenhaSec(){
-  const a=prompt('Digite a senha atual da Secretaria:');if(a===null)return;if(!await secOk(a))return alert('Senha atual incorreta.');
+  const atual=prompt('Digite a senha atual da Secretaria:');if(atual===null)return;
   const n=prompt('Digite a nova senha (mínimo 6 caracteres):');if(!n)return;if(n.length<6)return alert('Senha muito curta.');
   if(prompt('Confirme a nova senha:')!==n)return alert('A confirmação não confere.');
-  salvarSenhaSecLocal(a);salvarSenhaSecLocal(n);
-  await db.ref('config/secSenhaHash').set(await hsh(n));alert('Senha da Secretaria alterada com sucesso!');
-}
-async function senhaOk(id,s){const p=professores[id];if(!p)return false;if(p.senhaHash)return p.senhaHash===await hsh(s);if(p.senhaTemporaria)return p.senhaTemporaria===s;return s===SENHA_LEGACY}
-async function entrarProf(){
-  const nome=$('profNome').value.trim().replace(/\s+/g,' '),achado=nomeProfessorExiste(nome);
-  if(!achado){$('errProf').textContent='Nome do professor não encontrado. Digite o nome completo cadastrado pela Secretaria.';return}
-  const id=achado[0];if(!await senhaOk(id,$('profSenha').value)){$('errProf').textContent='Senha incorreta.';return}
-  $('errProf').textContent='';guardarPreenchimentoProf();salvarSenhaProfLocal(nome,$('profSenha').value);salvarSessao({role:'prof',id},$('keepProf').checked);S.viaSec=false;abrirProf(id)
+  try{await supabaseRpc('ceja_change_password',{p_token:AUTH.token,p_current:atual,p_new:n,p_client_id:CLIENT_ID});alert('Senha alterada com sucesso!')}
+  catch(e){alert(/atual|incorreta/i.test(e.message)?'Senha atual incorreta.':'Não foi possível alterar a senha: '+e.message)}
 }
 async function alterarSenha(){
-  const id=S.prof;if(!id)return;const a=prompt('Digite sua senha atual:');if(a===null)return;if(!await senhaOk(id,a))return alert('Senha atual incorreta.');
+  const atual=prompt('Digite sua senha atual:');if(atual===null)return;
   const n=prompt('Digite a nova senha (mínimo 4 caracteres):');if(!n)return;if(n.length<4)return alert('Senha muito curta.');
   if(prompt('Confirme a nova senha:')!==n)return alert('A confirmação não confere.');
-  salvarSenhaProfLocal(professores[id].nome,a);salvarSenhaProfLocal(professores[id].nome,n);
-  await db.ref('professores/'+id).update({senhaHash:await hsh(n),senhaAlteradaEm:Date.now()});
-  try{const saved=JSON.parse(localStorage.getItem(PROF_LOGIN_KEY)||'null');if(saved&&normNome(saved.nome)===normNome(professores[id].nome)){saved.senha=n;localStorage.setItem(PROF_LOGIN_KEY,JSON.stringify(saved))}}catch(e){}
-  alert('Senha alterada com sucesso!');
+  try{
+    await supabaseRpc('ceja_change_password',{p_token:AUTH.token,p_current:atual,p_new:n,p_client_id:CLIENT_ID});
+    salvarSenhaProfLocal((professores[S.prof]||{}).nome,n);alert('Senha alterada com sucesso!');
+  }catch(e){alert(/atual|incorreta/i.test(e.message)?'Senha atual incorreta.':'Não foi possível alterar a senha: '+e.message)}
+}
+async function entrarProf(){
+  const nome=$('profNome').value.trim().replace(/\s+/g,' '),senha=$('profSenha').value;
+  $('errProf').textContent='';
+  if(!nome){$('errProf').textContent='Digite seu nome completo.';return}
+  try{
+    const data=await supabaseRpc('ceja_login',{p_role:'prof',p_name:nome,p_password:senha});
+    $('errProf').textContent='';guardarPreenchimentoProf();
+    await ativarSessao(data,$('keepProf').checked);
+  }catch(e){console.error(e);$('errProf').textContent=/incorreta|inválid|login|encontrado/i.test(e.message)?'Nome não encontrado ou senha incorreta.':'Não foi possível entrar. Confira se o SQL do Supabase foi executado e tente novamente.'}
 }
 function sair(){
-  salvarSessao(null,false);S.role=null;S.viaSec=false;
+  salvarSessao(null,false);AUTH.token='';AUTH.sessionId='';AUTH.identity=null;S.role=null;S.viaSec=false;
   ['secApp','profApp'].forEach(x=>$(x).classList.add('hidden'));$('login').classList.remove('hidden');$('secSenha').value='';$('errSec').textContent='';
   try{history.replaceState({ceja:CEJA_HISTORY_MARK,view:'login'},'',location.href)}catch(e){}
   preencherLoginProf();preencherLoginSec();loginTab('sec');renderLoginsSalvos();
@@ -365,7 +488,7 @@ function sair(){
 function voltarSec(){S.viaSec=false;S.role='sec';$('profApp').classList.add('hidden');$('secApp').classList.remove('hidden');S.modo='PROFESSORES';gravarEstadoNavegacao(true);render()}
 function abrirSec(){S.role='sec';$('login').classList.add('hidden');$('profApp').classList.add('hidden');$('secApp').classList.remove('hidden');gravarEstadoNavegacao(true);ouvirAno();render();renderLoginsSalvos()}
 function abrirProf(id){
-  const p=professores[id];if(!p)return;S.role='prof';S.prof=id;S.area=p.area;S.rows=30;S.mes=MESES[hoje.getMonth()];S.dia=String(hoje.getDate()).padStart(2,'0');
+  const p=professores[id];if(!p)return;historicoEscolarProf=false;S.role='prof';S.prof=id;S.area=p.area;S.rows=30;S.mes=MESES[hoje.getMonth()];S.dia=String(hoje.getDate()).padStart(2,'0');
   $('login').classList.add('hidden');$('secApp').classList.add('hidden');$('profApp').classList.remove('hidden');$('btnVoltarSec').classList.toggle('hidden',!S.viaSec);gravarEstadoNavegacao(true);
   $('profWho').innerHTML=`<strong>${esc(p.nome)}</strong>`;$('profTag').textContent=`ÁREA DE CONHECIMENTO: ${p.area} — ${p.nome}`;ouvirAno();render()
 }
@@ -395,55 +518,29 @@ function ouvirSit(){
 function recalc(){
   flat=[];
   Object.entries(dadosAtend).forEach(([mes,md])=>Object.entries(md||{}).forEach(([dia,dd])=>Object.entries(dd||{}).forEach(([ak,ad])=>Object.entries(ad||{}).forEach(([pid,pd])=>Object.entries(pd||{}).forEach(([k,r])=>{
-    if(r&&(r.estudante||'').trim())flat.push({...r,mes,dia,ak,pid,key:k,src:'N'})})))));
+    if(r&&(r.estudante||'').trim())flat.push({...r,nivel:r.nivel||'',avaliacaoRealizada:r.avaliacaoRealizada||r.avaliacao||r.avaliacao_realizada||'',mes,dia,ak,pid,key:k,src:'N'})})))));
   Object.entries(dadosLegacy).forEach(([mes,md])=>Object.entries(md||{}).forEach(([dia,dd])=>Object.entries(dd||{}).forEach(([ak,ad])=>Object.entries(ad||{}).forEach(([k,r])=>{
-    if(r&&(r.estudante||'').trim())flat.push({estudante:r.estudante,mat:r.mat,nivel:r.nivel,componente:r.componente,professor:r.professor,tipo:r.atendimento||'',forma:r.atendimento||'',frequencia:!!r.frequencia,ts:0,mes,dia,ak,pid:'',key:k,src:'L'})}))));
+    if(r&&(r.estudante||'').trim())flat.push({estudante:r.estudante,mat:r.mat,nivel:r.nivel||'',avaliacaoRealizada:r.avaliacaoRealizada||r.avaliacao||r.avaliacao_realizada||'',componente:r.componente,professor:r.professor,tipo:r.atendimento||'',forma:r.atendimento||'',frequencia:!!r.frequencia,ts:0,mes,dia,ak,pid:'',key:k,src:'L'})}))));
   const sets={estudante:new Set(),mat:new Set(),nivel:new Set(),componente:new Set(),forma:new Set()};alunoInfo={};
   flat.forEach(r=>{['estudante','mat','nivel','componente','forma'].forEach(f=>{const v=(r[f]||'').trim();if(v)sets[f].add(v)});
     const n=(r.estudante||'').trim().toUpperCase();if(n&&(r.mat||r.nivel))alunoInfo[n]={mat:(r.mat||'').trim(),nivel:(r.nivel||'').trim()}});
   SUG={};Object.keys(sets).forEach(f=>SUG[f]=[...sets[f]]);
   render();
 }
-let baseSyncEmAndamento=false,baseSyncConcluida=false;
-async function sincronizarProfessoresBase(){
-  if(baseSyncEmAndamento||baseSyncConcluida)return;baseSyncEmAndamento=true;
-  try{
-    const flag=await db.ref('config/professoresBaseV3').once('value'),snap=await db.ref('professores').once('value'),atuais=snap.val()||{},porNome={},updates={};
-    Object.entries(atuais).forEach(([id,p])=>{porNome[normNome(p.nome)]=[id,p]});
-    if(!flag.exists()){
-      for(const [nome,area,senhaTemp] of PROFESSORES_BASE){
-        let achado=porNome[normNome(nome)],id,p;
-        if(achado){id=achado[0];p=achado[1]||{}}else{id=slug(nome);while(atuais[id]&&normNome(atuais[id].nome)!==normNome(nome))id=slug(nome)+'_'+Math.random().toString(36).slice(2,7);p={}}
-        if(p.nome!==nome)updates[id+'/nome']=nome;
-        if(p.area!==area)updates[id+'/area']=area;
-        if(!p.senhaHash){updates[id+'/senhaHash']=await hsh(senhaTemp);updates[id+'/senhaTemporaria']=senhaTemp;updates[id+'/senhaAlteradaEm']=null}
-        else if(!p.senhaTemporaria)updates[id+'/senhaTemporaria']=senhaTemp;
-      }
-      if(Object.keys(updates).length)await db.ref('professores').update(updates);
-      await db.ref('config/professoresBaseV3').set(true);
-    }else{
-      for(const [nome,area,senhaTemp] of PROFESSORES_BASE){
-        const achado=porNome[normNome(nome)];if(!achado)continue;
-        const [id,p]=achado;
-        if(!p.senhaHash)updates[id+'/senhaHash']=await hsh(senhaTemp);
-        if(!p.senhaTemporaria)updates[id+'/senhaTemporaria']=senhaTemp;
-      }
-      if(Object.keys(updates).length)await db.ref('professores').update(updates);
-    }
-    baseSyncConcluida=true;
-  }catch(e){console.error('Falha ao sincronizar professores:',e)}finally{baseSyncEmAndamento=false}
-}
-function semear(){sincronizarProfessoresBase()}
+// Cadastros iniciais e credenciais são criados pelo script SQL do Supabase.
+function semear(){}
 renderLoginsSalvos();
 db.ref('professores').on('value',s=>{
-  professores=s.val()||{};montarLoginProfessorDireto();preencherLoginProf();semear();
-  if(!bootDone){bootDone=true;try{const o=JSON.parse(localStorage.getItem('cejaSess')||'null');if(o&&o.role==='sec')abrirSec();else if(o&&o.role==='prof'&&professores[o.id])abrirProf(o.id)}catch(e){}}else render()
+  professores=s.val()||{};
+  if(S.role){montarLoginProfessorDireto();render();}
 });
+setTimeout(()=>restaurarSessaoSalva(),180);
 function montarLoginProfessorDireto(){
   const q=new URLSearchParams(location.search).get('prof');
   if(q&&professores[q]){$('profNome').value=professores[q].nome||'';loginTab('prof')}
-  else{try{const saved=JSON.parse(localStorage.getItem(PROF_LOGIN_KEY)||'null');if(saved&&saved.nome){$('profNome').value=saved.nome;$('profSenha').value=saved.senha||''}}catch(e){}}
+  else{}
 }
+
 
 /* ---------- UTILIDADES ---------- */
 const pn=r=>(r.professor||'').trim().toUpperCase();
@@ -548,7 +645,7 @@ function secSituacao(ak){
   return h+`<div class="tc"><table class="exp"><thead><tr><th>ORDEM</th><th>STATUS</th><th>NOME DO ESTUDANTE</th><th>MATRÍCULA</th><th>ÚLTIMA<br>FREQUÊNCIA</th><th>DIAS<br>DECORRIDOS</th><th>DATA DA<br>CONCLUSÃO</th><th>CONCLUSÃO</th><th>AÇÃO</th></tr></thead><tbody>${
    l.map((a,i)=>`<tr><td class="o">${i+1}</td><td>${ic[S.sit]}</td><td class="l">${esc(a.n)}</td><td>${esc(a.mat)}</td><td>${fmt(a.d)}</td><td>${a.d?a.dias:'-'}</td><td>${esc(a.dc||'-')}</td><td><button class="btn sm ${S.sit==='CONCLUDENTE'?'alt':''}" onclick="concluir('${a.k}',${S.sit==='CONCLUDENTE'})">${S.sit==='CONCLUDENTE'?'Reabrir':'Concluir'}</button></td><td class="del-aluno"><button class="btn sm delete-student" data-nome="${esc(a.n)}" data-mat="${esc(a.mat)}" onclick="excluirAlunoBotao(this)">🗑 Excluir aluno</button></td></tr>`).join('')||'<tr><td colspan=9 class="nd">Nenhum estudante nesta situação.</td></tr>'}</tbody></table></div>`;
 }
-function concluir(k,reabrir){const r=db.ref(`situacaoAlunos/${S.ano}/${akey(S.area)}/${k}`);reabrir?r.remove():r.set({concluido:true,data:new Date().toLocaleDateString('pt-BR')})}
+async function concluir(k,reabrir){const r=db.ref(`situacaoAlunos/${S.ano}/${akey(S.area)}/${k}`);try{if(reabrir)await r.remove();else await r.set({concluido:true,data:new Date().toLocaleDateString('pt-BR')});sitCache=(await db.ref(`situacaoAlunos/${S.ano}/${akey(S.area)}`).once('value')).val()||{};render()}catch(e){alert('Não foi possível atualizar a situação do estudante: '+e.message)}}
 function secMensal(ak){
   const rs=flat.filter(r=>r.ak===ak&&r.mes===S.mes),gs=grupos(rs);
   profsDaArea(S.area,rs).forEach(n=>{if(!gs[n.toUpperCase()])gs[n.toUpperCase()]={nome:n,rs:[]}});
@@ -557,14 +654,13 @@ function secMensal(ak){
    <div class="sec-t">Quantitativo da área</div><div class="chips">${chips(o)}</div><div class="sec-t">Atendimentos individuais por professor(a)</div>`+tabResumo(gs,'Professor(a)');
 }
 /* PROFESSORES (cadastro + ambientes compartilhados) */
-function senhaTemporariaBasePorNome(nome){const x=PROFESSORES_BASE.find(p=>normNome(p[0])===normNome(nome));return x?x[2]:''}
 function gerarSenhaTemporaria(){return String(Math.floor(100000+Math.random()*900000))}
 function secProfessores(){
   let h=`<div class="filters"><div class="row"><b>Novo(a)</b><input id="npNome" class="inp" style="max-width:340px" placeholder="Nome completo do professor(a)"><select id="npArea" class="inp" style="max-width:300px">${AREAS.map(a=>`<option>${a}</option>`).join('')}</select><button class="btn sm" onclick="cadastrarProf()">Cadastrar</button></div><p class="hint">A Secretaria pode adicionar, retirar e mudar professores de área a qualquer hora. Novos professores recebem uma senha temporária de 6 dígitos.</p></div>`;
   AREAS.forEach(a=>{
     const l=Object.entries(professores).filter(([i,p])=>p.area===a).sort((x,y)=>x[1].nome.localeCompare(y[1].nome));if(!l.length)return;
     h+=`<div class="sec-t">${a}</div><div class="tc"><table><thead><tr><th>Professor(a)</th><th class="no-exp">Mudar de área</th><th class="no-exp">Ambiente</th><th class="no-exp">Senha</th><th class="no-exp"></th></tr></thead><tbody>${l.map(([i,p])=>{
-      const st=p.senhaAlteradaEm?'Personalizada':(p.senhaTemporaria?`Temporária (${esc(p.senhaTemporaria)})`:'Definida');
+      const st=p.senhaTemporaria?'Temporária — redefina se necessário':(p.senhaAlteradaEm?'Personalizada':'Definida');
       return `<tr><td class="l" style="font-weight:600">${esc(p.nome)}</td><td class="no-exp"><select class="inp" style="max-width:270px" onchange="moverProf('${i}',this.value)">${AREAS.map(x=>`<option ${x===p.area?'selected':''}>${x}</option>`).join('')}</select></td><td class="no-exp"><button class="btn sm" onclick="abrirAmbiente('${i}')">Abrir ambiente</button> <button class="btn sm alt" onclick="copiarLink('${i}')">Copiar link</button></td><td class="no-exp">${st}<br><button class="btn sm alt" onclick="resetSenha('${i}')">Redefinir temporária</button></td><td class="no-exp"><button class="ib" title="Remover" onclick="removerProf('${i}')">🗑</button></td></tr>`
     }).join('')}</tbody></table></div>`;
   });
@@ -572,21 +668,40 @@ function secProfessores(){
 }
 async function cadastrarProf(){
   const n=$('npNome').value.trim().replace(/\s+/g,' '),a=$('npArea').value;
-  if(n.length<5)return alert('Digite o nome completo.');if(nomeProfessorExiste(n))return alert('Este professor já está cadastrado.');
+  if(n.length<5)return alert('Digite o nome completo.');
+  if(nomeProfessorExiste(n))return alert('Este professor já está cadastrado.');
   const senha=gerarSenhaTemporaria(),id=slug(n)+'_'+Date.now().toString(36);
-  await db.ref('professores/'+id).set({nome:n,area:a,senhaHash:await hsh(senha),senhaTemporaria:senha,criadoEm:Date.now()});
-  $('npNome').value='';alert('Professor cadastrado.\nSenha temporária: '+senha+'\nEntregue essa senha ao professor.');
+  try{
+    await supabaseRpc('ceja_create_professor',{p_token:AUTH.token,p_id:id,p_name:n,p_area:a,p_password:senha,p_client_id:CLIENT_ID});
+    $('npNome').value='';
+    await recarregarProfessores();
+    alert('Professor cadastrado.\nSenha temporária (mostrada apenas agora): '+senha+'\nEntregue a senha ao professor e oriente-o a alterá-la no primeiro acesso.');
+  }catch(e){console.error(e);alert('Não foi possível cadastrar o professor: '+e.message)}
 }
-function moverProf(id,a){db.ref('professores/'+id+'/area').set(a)}
+async function moverProf(id,a){
+  try{await supabaseRpc('ceja_move_professor',{p_token:AUTH.token,p_id:id,p_area:a,p_client_id:CLIENT_ID});await recarregarProfessores()}
+  catch(e){alert('Não foi possível mudar o professor de área: '+e.message);await recarregarProfessores()}
+}
+async function resetSenha(id){
+  const p=professores[id];if(!p)return;
+  if(!confirm('Redefinir a senha deste professor para uma senha temporária?'))return;
+  const senha=gerarSenhaTemporaria();
+  try{
+    await supabaseRpc('ceja_reset_professor_password',{p_token:AUTH.token,p_id:id,p_password:senha,p_client_id:CLIENT_ID});
+    await recarregarProfessores();
+    alert('Senha temporária definida para '+p.nome+': '+senha+'\nGuarde e entregue esta senha ao professor. Ela não será exibida novamente.');
+  }catch(e){alert('Não foi possível redefinir a senha: '+e.message)}
+}
+async function removerProf(id){
+  const p=professores[id];
+  if(p&&confirm('Remover '+p.nome+' da área '+p.area+'? Os atendimentos já registrados serão mantidos.')){
+    try{await supabaseRpc('ceja_delete_professor',{p_token:AUTH.token,p_id:id,p_client_id:CLIENT_ID});await recarregarProfessores()}
+    catch(e){alert('Não foi possível remover o professor: '+e.message)}
+  }
+}
+async function recarregarProfessores(){try{professores=(await db.ref('professores').once('value')).val()||{};render()}catch(e){console.error(e)}}
 function abrirAmbiente(id){S.viaSec=true;abrirProf(id)}
 function copiarLink(id){const u=location.origin+location.pathname+'?prof='+encodeURIComponent(id);(navigator.clipboard?navigator.clipboard.writeText(u):Promise.reject()).then(()=>alert('Link do professor copiado.')).catch(()=>prompt('Copie o link:',u))}
-async function resetSenha(id){
-  const p=professores[id];if(!p)return;const senha=senhaTemporariaBasePorNome(p.nome)||gerarSenhaTemporaria();
-  if(!confirm('Redefinir a senha deste professor para uma senha temporária?'))return;
-  if(p.senhaTemporaria)salvarSenhaProfLocal(p.nome,p.senhaTemporaria);salvarSenhaProfLocal(p.nome,senha);
-  await db.ref('professores/'+id).update({senhaHash:await hsh(senha),senhaTemporaria:senha,senhaAlteradaEm:null});alert('Senha temporária definida para '+p.nome+': '+senha);
-}
-function removerProf(id){const p=professores[id];if(p&&confirm('Remover '+p.nome+' da área '+p.area+'? Os atendimentos já registrados serão mantidos.'))db.ref('professores/'+id).remove()}
 
 /* ---------- TABELA DE ATENDIMENTO DIÁRIO (professor e secretaria) ---------- */
 const tiposArea=()=>TIPOS_AREA[S.area]||[];
@@ -605,7 +720,7 @@ function sitDe(n,m){
 function refDe(tr){const b=`${S.ano}/${S.mes}/${S.dia}/${akey(S.area)}`;return db.ref(tr.dataset.src==='L'?`frequencias/${b}/${tr.dataset.key}`:`atend/${b}/${tr.dataset.pid}/${tr.dataset.key}`)}
 function mountEd(host){
   const ti=tiposArea();
-  host.innerHTML=`<div class="tc"><table class="ed"><thead><tr><th class="col-ord">ORDEM</th><th class="col-mat">MATRÍCULA</th><th class="col-est">NOME DO<br>ESTUDANTE</th><th class="col-data">DATA</th><th class="col-prof">PROFESSOR<br>QUE ATENDEU</th>${livre(S.area)?'<th class="col-forma">FORMA DE<br>ATENDIMENTO<br>(DIGITADA)</th>':ti.map(i=>`<th class="col-tipo">${TIPOS[i]}</th>`).join('')}<th class="col-pres">PRESENÇA</th><th class="col-sit">SITUAÇÃO DO<br>ESTUDANTE</th><th class="no-exp">AÇÕES</th></tr></thead><tbody class="edb"></tbody></table></div><div class="ed-actions"><button class="btn sm" onclick="maisLinha(this)">➕ Adicionar 1 linha</button><button class="btn sm warn" onclick="retirarLinha(this)">➖ Retirar 1 linha</button><button class="btn sm save" onclick="salvarAlteracoesTela()">💾 Salvar alterações</button><span class="line-status" id="edStatus"></span></div><div class="status-legend"><strong>Situação:</strong> 🟢 Ativo = frequência até 30 dias &nbsp; | &nbsp; 🟡 Pré-Evadido = 31 a 59 dias sem frequência &nbsp; | &nbsp; 🔴 Evadido = 60 dias ou mais sem frequência</div>`;
+  host.innerHTML=`<div class="tc"><table class="ed"><thead><tr><th class="col-ord">ORDEM</th><th class="col-nivel">NÍVEL DE ENSINO</th><th class="col-mat">MATRÍCULA</th><th class="col-est">NOME DO<br>ESTUDANTE</th><th class="col-data">DATA</th><th class="col-prof">PROFESSOR<br>QUE ATENDEU</th>${livre(S.area)?'<th class="col-forma">FORMA DE<br>ATENDIMENTO<br>(DIGITADA)</th>':ti.map(i=>`<th class="col-tipo">${TIPOS[i]}</th>`).join('')}<th class="col-avaliacao">AVALIAÇÃO REALIZADA</th><th class="col-pres">PRESENÇA</th><th class="col-sit">SITUAÇÃO DO<br>ESTUDANTE</th><th class="no-exp">AÇÕES</th></tr></thead><tbody class="edb"></tbody></table></div><div class="ed-actions"><button class="btn sm" onclick="maisLinha(this)">➕ Adicionar 1 linha</button><button class="btn sm warn" onclick="retirarLinha(this)">➖ Retirar 1 linha</button><button class="btn sm save" onclick="salvarAlteracoesTela()">💾 Salvar alterações</button><span class="line-status" id="edStatus"></span></div><div class="status-legend"><strong>Situação:</strong> 🟢 Ativo = frequência até 30 dias &nbsp; | &nbsp; 🟡 Pré-Evadido = 31 a 59 dias sem frequência &nbsp; | &nbsp; 🔴 Evadido = 60 dias ou mais sem frequência</div>`;
   const tb=host.querySelector('.edb'),rs=ED.rs||[],tot=Math.max(30,S.rows,rs.length);for(let i=0;i<tot;i++)addRow(tb,rs[i]);
 }
 function renumRows(tb){[...tb.children].forEach((tr,i)=>{const c=tr.querySelector('.col-ord');if(c)c.textContent=i+1})}
@@ -618,7 +733,7 @@ function retirarLinha(b){
 function addRow(tb,r){
   r=r||{frequencia:false};const tr=document.createElement('tr'),ti=tiposArea(),ts=tiposDe(r);
   tr.dataset.key=r.key||'';tr.dataset.pid=r.pid||'';tr.dataset.src=r.src||'';tr.dataset.ts=r.ts||'';
-  const inp=f=>`<td class="${f==='mat'?'col-mat':'col-est'}"><input class="ci" data-f="${f}" value="${esc(r[f]||'')}" ${f==='mat'?'maxlength="6" inputmode="numeric"':''} oninput="marcarDigitacao(this)" onchange="salvarLinha(this)" autocomplete="off"></td>`;
+  const inp=f=>`<td class="col-${f}"><input class="ci" data-f="${f}" value="${esc(r[f]||'')}" ${f==='mat'?'maxlength="6" inputmode="numeric"':''} oninput="marcarDigitacao(this)" onchange="salvarLinha(this)" autocomplete="off"></td>`;
   let pc;
   if(ED.pid)pc=`<td class="l col-prof">${esc(ED.nome)}</td>`;
   else{
@@ -630,7 +745,8 @@ function addRow(tb,r){
   }
   const autoFreq=ts.length>0 || (livre(S.area)&&normF(r.forma||r.tipo));
   const tiposHtml=livre(S.area)?`<td class="col-forma"><input class="ci" data-f="forma" value="${esc(r.forma||r.tipo||'')}" oninput="marcarDigitacao(this)" onchange="salvarLinha(this)" autocomplete="off"></td>`:ti.map(i=>`<td class="col-tipo"><input type="checkbox" data-f="t" data-i="${i}" ${ts.includes(i)?'checked':''} onchange="salvarLinha(this)"></td>`).join('');
-  tr.innerHTML=`<td class="o col-ord">${tb.children.length+1}</td>${inp('mat')}${inp('estudante')}<td class="col-data">${S.dia}/${String(MESES.indexOf(S.mes)+1).padStart(2,'0')}/${S.ano}</td>${pc}${tiposHtml}<td class="col-pres"><input type="checkbox" data-f="freq" ${(r.frequencia||autoFreq)?'checked':''} onchange="salvarLinha(this)" aria-label="Presença"></td><td class="sit col-sit">${sitDe(r.estudante,r.mat)}</td><td class="no-exp col-acao"><button class="ib" title="Excluir este atendimento" onclick="delLinha(this)">🗑</button><button class="ib" title="Excluir o aluno deste ano" onclick="excluirAlunoDaLinha(this)">👤</button></td>`;
+  const avaliacaoExistente=r.avaliacaoRealizada||r.avaliacao||r.avaliacao_realizada||'';
+  tr.innerHTML=`<td class="o col-ord">${tb.children.length+1}</td>${inp('nivel')}${inp('mat')}${inp('estudante')}<td class="col-data">${S.dia}/${String(MESES.indexOf(S.mes)+1).padStart(2,'0')}/${S.ano}</td>${pc}${tiposHtml}<td class="col-avaliacao"><input class="ci" data-f="avaliacao" value="${esc(avaliacaoExistente)}" oninput="marcarDigitacao(this)" onchange="salvarLinha(this)" autocomplete="off" aria-label="Avaliação realizada"></td><td class="col-pres"><input type="checkbox" data-f="freq" ${(r.frequencia||autoFreq)?'checked':''} onchange="salvarLinha(this)" aria-label="Presença"></td><td class="sit col-sit">${sitDe(r.estudante,r.mat)}</td><td class="no-exp col-acao"><button class="ib" title="Excluir este atendimento" onclick="delLinha(this)">🗑</button><button class="ib" title="Excluir o aluno deste ano" onclick="excluirAlunoDaLinha(this)">👤</button></td>`;
   tb.appendChild(tr);
 }
 let saveTimers=new WeakMap();
@@ -641,19 +757,25 @@ function marcarDigitacao(i){i.dataset.dirty='1';
 function ac(){return} // mantido por compatibilidade com versões anteriores; não substitui o que o usuário digitou
 
 function salvarLinha(el){
-  const tr=el.closest('tr'),g=f=>tr.querySelector(`[data-f="${f}"]`),f=el.dataset.f;let mat=g('mat').value.trim(),est=g('estudante').value.trim();
-  // A matrícula e o nome são independentes: o sistema nunca substitui o que o usuário digitou.
+  const tr=el.closest('tr'),g=f=>tr.querySelector(`[data-f="${f}"]`),f=el.dataset.f;
+  let nivel=(g('nivel')?.value||'').trim(),mat=g('mat').value.trim(),est=g('estudante').value.trim();
+  const avaliacaoRealizada=(g('avaliacao')?.value||'').trim();
+  // A matrícula, o nível e o nome são independentes: o sistema nunca substitui o que o usuário digitou.
   const tipos=[...tr.querySelectorAll('[data-f="t"]:checked')].map(c=>TIPOS[+c.dataset.i]),forma=livre(S.area)?normF(g('forma').value):'',temTipo=tipos.length>0||!!forma;let freq=!!g('freq').checked||temTipo;if(temTipo)g('freq').checked=true;
   let pid,nome;if(ED.pid){pid=ED.pid;nome=ED.nome}else{const v=g('prof').value;if(v.startsWith('n:')){pid='_sem';nome=v.slice(2)}else if(v){pid=v;nome=(professores[v]||{}).nome||''}else{pid='_sem';nome=''}}
-  if(!(est||mat||tipos.length||forma)){if(tr.dataset.key)refDe(tr).remove();tr.dataset.key='';tr.dataset.src='';tr.dataset.pid='';tr.dataset.ts='';tr.querySelector('.sit').textContent='';return Promise.resolve()}
+  if(!(est||mat||nivel||avaliacaoRealizada||tipos.length||forma)){if(tr.dataset.key)refDe(tr).remove();tr.dataset.key='';tr.dataset.src='';tr.dataset.pid='';tr.dataset.ts='';tr.querySelector('.sit').textContent='';return Promise.resolve()}
   const base=db.ref(`atend/${S.ano}/${S.mes}/${S.dia}/${akey(S.area)}/${pid}`);let key=tr.dataset.key;
   if(key&&(tr.dataset.src==='L'||tr.dataset.pid!==pid)){refDe(tr).remove();key=''}if(!key)key=base.push().key;
   const ts=+tr.dataset.ts||Date.now();tr.dataset.key=key;tr.dataset.pid=pid;tr.dataset.src='N';tr.dataset.ts=ts;tr.querySelector('.sit').textContent=sitDe(est,mat);
-  return base.child(key).set({estudante:est,mat,professor:nome,profId:pid,tipos,forma,frequencia:freq,atendimentos:qtdAtend({ak:akey(S.area),tipos,forma}),ts}).then(()=>{const p=$('profSalvo');if(p)p.textContent='✔ Salvo às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})})
+  return base.child(key).set({estudante:est,nivel,mat,avaliacaoRealizada,professor:nome,profId:pid,tipos,forma,frequencia:freq,atendimentos:qtdAtend({ak:akey(S.area),tipos,forma}),ts}).then(()=>{const p=$('profSalvo');if(p)p.textContent='✔ Salvo às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})})
 }
 async function salvarAlteracoesTela(){
   const root=S.role==='sec'?$('secBody'):$('profMain'),rows=[...root.querySelectorAll('.edb tr')];if(!rows.length)return alert('Abra a tabela de atendimento diário para salvar as alterações.');
-  try{await Promise.all(rows.map(tr=>{const base=tr.querySelector('[data-f="estudante"]')||tr.querySelector('[data-f="mat"]');return base?salvarLinha(base):Promise.resolve()}));const st=root.querySelector('#edStatus');if(st){st.textContent='✔ Alterações salvas com sucesso.';setTimeout(()=>st.textContent='',3500)}}
+  try{
+    await Promise.all(rows.map(tr=>{const base=tr.querySelector('[data-f="estudante"]')||tr.querySelector('[data-f="mat"]');return base?salvarLinha(base):Promise.resolve()}));
+    await refreshMatchingListeners({data_root:'atend',scope_key:String(S.ano)});
+    const st=root.querySelector('#edStatus');if(st){st.textContent='✔ Alterações salvas com sucesso.';setTimeout(()=>{if(document.contains(st))st.textContent=''},3500)}
+  }
   catch(e){console.error(e);alert('Não foi possível salvar todas as alterações. Verifique a conexão com a internet.')}
 }
 function delLinha(b){
@@ -682,7 +804,12 @@ async function excluirAlunoAtual(nome,mat){
     const kn=parts[0]||'',km=parts.slice(1).join('___');
     if(normNome(kn)===normNome(nome)&&( !mat || km===mat.toUpperCase() || km==='SEM_MAT'))updates[`situacaoAlunos/${S.ano}/${ak}/${k}`]=null;
   }));
-  if(Object.keys(updates).length)await db.ref().update(updates);
+  if(Object.keys(updates).length){
+    await db.ref().update(updates);
+    await refreshMatchingListeners({data_root:'atend',scope_key:String(S.ano)});
+    await refreshMatchingListeners({data_root:'frequencias',scope_key:String(S.ano)});
+    await refreshMatchingListeners({data_root:'situacaoAlunos',scope_key:String(S.ano)});
+  }
   alert(`Aluno ${alvo} excluído dos registros do ano ${S.ano}.`);
 }
 function excluirAlunoBotao(b){const nome=b.dataset.nome||'',mat=b.dataset.mat||'';excluirAlunoAtual(nome,mat)}
@@ -693,10 +820,69 @@ function excluirAlunoDaLinha(b){
   excluirAlunoAtual(nome,mat);
 }
 
+function valorAvaliacaoRealizada(r){return String(r.avaliacaoRealizada||r.avaliacao||r.avaliacao_realizada||'').trim()}
+function alternarHistoricoEscolarProf(){historicoEscolarProf=!historicoEscolarProf;renderProf()}
+function registroMaisRecente(a,b){
+  if(!b)return true;
+  const da=dataReg(a).getTime(),db=dataReg(b).getTime();
+  return da>db||(da===db&&(Number(a.ts)||0)>=(Number(b.ts)||0));
+}
+function montarHistoricoEstudantes(area,registros){
+  const estudantes=new Map(),chaveArea=akey(area);
+  registros.filter(r=>r.ak===chaveArea&&(r.estudante||'').trim()).forEach(r=>{
+    const avaliacao=valorAvaliacaoRealizada(r);
+    // Registros da coleção legada frequencias também representam frequência,
+    // mesmo quando não possuem a propriedade booleana frequencia.
+    const temFrequencia=r.src==='L'||registroTemFrequencia(r);
+    if(!temFrequencia&&!avaliacao)return;
+    const nome=(r.estudante||'').trim(),chave=sKey(nome,r.mat),item=estudantes.get(chave)||{
+      nome,matricula:'',nivel:'',ultimaFrequencia:null,ultimaAvaliacao:null
+    };
+    if(registroMaisRecente(r,item.ultimoRegistroDados||null)){
+      item.ultimoRegistroDados=r;
+      if((r.mat||'').trim())item.matricula=(r.mat||'').trim();
+      if((r.nivel||'').trim())item.nivel=(r.nivel||'').trim();
+    }else{
+      if(!item.matricula&&(r.mat||'').trim())item.matricula=(r.mat||'').trim();
+      if(!item.nivel&&(r.nivel||'').trim())item.nivel=(r.nivel||'').trim();
+    }
+    if(temFrequencia&&registroMaisRecente(r,item.ultimaFrequencia))item.ultimaFrequencia=r;
+    if(avaliacao&&registroMaisRecente(r,item.ultimaAvaliacao))item.ultimaAvaliacao=r;
+    estudantes.set(chave,item);
+  });
+  const lista=[...estudantes.values()].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
+  const linhas=lista.map((a,i)=>{
+    const avaliacao=a.ultimaAvaliacao?`<strong>${esc(valorAvaliacaoRealizada(a.ultimaAvaliacao))}</strong><small class="history-sub">Registrada em ${fmt(dataReg(a.ultimaAvaliacao))}</small>`:'<span class="history-empty">Não informada</span>';
+    return `<tr><td class="ex-ord">${i+1}</td><td class="l ex-est">${esc(a.nome)}</td><td>${esc(a.nivel||'-')}</td><td class="ex-mat">${esc(a.matricula||'-')}</td><td class="ex-data">${a.ultimaFrequencia?fmt(dataReg(a.ultimaFrequencia)):'Sem frequência'}</td><td class="l">${avaliacao}</td></tr>`;
+  }).join('');
+  return `<div class="sum"><div class="t">Histórico dos Estudantes — ${esc(area)}</div><div class="d"><span>Ano letivo: <strong>${S.ano}</strong></span><span>Estudantes atendidos na área: <strong>${lista.length}</strong></span></div></div><div class="tc"><table class="exp student-history"><thead><tr><th class="ex-ord">ORDEM</th><th class="ex-est">NOME DO ESTUDANTE</th><th>NÍVEL DE ENSINO</th><th class="ex-mat">MATRÍCULA</th><th class="ex-data">ÚLTIMA FREQUÊNCIA</th><th>AVALIAÇÃO REALIZADA</th></tr></thead><tbody>${linhas||'<tr><td colspan="6" class="nd">Nenhum estudante atendido foi registrado nesta área neste ano letivo.</td></tr>'}</tbody></table></div>`;
+}
 function renderProf(){
   const p=professores[S.prof];if(!p)return;const ak=akey(p.area),N=p.nome.trim().toUpperCase(),meus=flat.filter(r=>r.ak===ak&&(r.pid===S.prof||(r.src==='L'&&pn(r)===N)));
-  $('profFilt').innerHTML=filtroAno()+filtroMes()+filtroDia();$('profDia').innerHTML=chips(contar(meus.filter(r=>r.mes===S.mes&&r.dia===S.dia)));$('profMes').innerHTML=chips(contar(meus.filter(r=>r.mes===S.mes)));
+  $('profFilt').innerHTML=`<div class="row"><button class="btn sm ${historicoEscolarProf?'':'alt'}" onclick="alternarHistoricoEscolarProf()">${historicoEscolarProf?'← Voltar ao atendimento':'📚 Histórico do Estudante'}</button></div>`+filtroAno()+(historicoEscolarProf?'':filtroMes()+filtroDia());
+  const resumo=$('profMain').querySelector('.sum');if(resumo)resumo.classList.toggle('hidden',historicoEscolarProf);
+  if(historicoEscolarProf){
+    // O histórico é da área de conhecimento inteira, não apenas dos registros
+    // feitos pelo professor que está conectado.
+    const registrosDaArea=flat.filter(r=>r.ak===ak);
+    ED={pid:S.prof,nome:p.nome,rs:[]};$('profEd').innerHTML=montarHistoricoEstudantes(p.area,registrosDaArea);return;
+  }
+  $('profDia').innerHTML=chips(contar(meus.filter(r=>r.mes===S.mes&&r.dia===S.dia)));$('profMes').innerHTML=chips(contar(meus.filter(r=>r.mes===S.mes)));
   ED={pid:S.prof,nome:p.nome,rs:meus.filter(r=>r.mes===S.mes&&r.dia===S.dia).sort((a,b)=>(a.ts||0)-(b.ts||0))};mountEd($('profEd'))
+}
+
+async function importarBackupFirebase(input){
+  const file=input&&input.files&&input.files[0];if(!file)return;
+  if(!confirm('Importar este backup pode substituir registros com a mesma chave no Supabase. Faça primeiro um backup e confirme que selecionou o JSON exportado do Firebase. Continuar?')){input.value='';return}
+  try{
+    const text=await file.text();
+    const backup=JSON.parse(text);
+    if(!backup||typeof backup!=='object'||Array.isArray(backup))throw new Error('O arquivo não parece ser um backup JSON do Firebase.');
+    const resultado=await supabaseRpc('ceja_import_firebase_json',{p_token:AUTH.token,p_backup:backup,p_client_id:CLIENT_ID});
+    alert((resultado&&resultado.message)||'Importação concluída. Confira os registros antes de continuar.');
+    for(const root of ['professores','atend','frequencias','situacaoAlunos']) await refreshMatchingListeners({data_root:root,scope_key:''});
+  }catch(e){console.error(e);alert('Falha ao importar o backup: '+e.message)}
+  finally{input.value=''}
 }
 
 /* ---------- EXPORTAR PDF / WORD ---------- */
@@ -705,7 +891,7 @@ function exportar(tipo){
   const oi=root.querySelectorAll('input,select'),ci=c.querySelectorAll('input,select');
   oi.forEach((o,i)=>{const t=o.type==='checkbox'?(o.checked?'✔':''):o.tagName==='SELECT'?(o.selectedOptions[0]&&o.value?o.selectedOptions[0].text:''):o.value;ci[i].replaceWith(document.createTextNode(t))});
   c.querySelectorAll('.filters,.bar,.no-exp,button,details,#profSalvo').forEach(e=>e.remove());
-  c.querySelectorAll('table.ed tbody tr').forEach(tr=>{if(!tr.children[1].textContent.trim()&&!tr.children[2].textContent.trim())tr.remove()});
+  c.querySelectorAll('table.ed tbody tr').forEach(tr=>{if(!tr.children[3].textContent.trim()&&!tr.children[2].textContent.trim())tr.remove()});
   let sub;
   if(S.role==='prof'){const p=professores[S.prof]||{};sub=`${p.nome} — ${p.area} — ${S.dia}/${String(MESES.indexOf(S.mes)+1).padStart(2,'0')}/${S.ano}`}
   else{sub='Secretaria — '+ROT[S.modo];if(['DIARIO','SITUACAO','MENSAL'].includes(S.modo))sub+=' — '+S.area;
