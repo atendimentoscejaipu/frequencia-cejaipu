@@ -123,6 +123,13 @@ table.exp td{overflow-wrap:anywhere;word-break:normal}
 .line-status{font-size:.78rem;color:#166534;font-weight:600;min-height:1em}
 .history-sub{display:block;margin-top:3px;color:#64748b;font-size:.74rem;font-weight:normal}
 .history-empty{color:#64748b;font-style:italic}
+.pass-field{display:flex;gap:7px;align-items:stretch}
+.pass-field input{flex:1;min-width:0}
+.btn-show-pass{flex:0 0 auto;width:auto;padding:8px 12px;background:#e2e8f0;color:#1e293b;border:1px solid #cbd5e1;border-radius:6px;font-weight:bold;cursor:pointer;white-space:nowrap}
+.btn-show-pass:hover{background:#cbd5e1}
+table.ed th.col-qtd,table.ed td.col-qtd{width:88px}
+table.ed td.col-qtd input.qty-input{min-width:54px!important;width:100%;text-align:center;font-weight:bold}
+table.ed th.col-forma,table.ed td.col-forma{width:250px}
 table.student-history{min-width:1050px}
 table.student-history th.ex-est,table.student-history td.ex-est{width:30%}
 table.student-history th.ex-data,table.student-history td.ex-data{width:16%}
@@ -148,34 +155,26 @@ table.student-history td{vertical-align:middle}
 
     <div id="pSec">
       <div class="fg"><label>Ambiente</label><input value="Secretaria — Administração" disabled></div>
-      <div class="fg"><label>Senha</label><input type="password" id="secSenha" autocomplete="current-password" oninput="registrarDigitacaoSec()" onkeydown="if(event.key==='Enter')entrarSec()"></div>
+      <div class="fg"><label>Senha</label><div class="pass-field"><input type="password" id="secSenha" autocomplete="current-password" oninput="registrarDigitacaoSec()" onkeydown="if(event.key==='Enter')entrarSec()"><button type="button" class="btn-show-pass" onclick="togglePassword('secSenha',this)" aria-pressed="false">👁 Mostrar</button></div></div>
       <label style="font-size:.82rem;color:#4b5563;display:flex;gap:8px;align-items:center;margin-bottom:14px"><input type="checkbox" id="keepSec" checked> Manter conectado neste aparelho</label>
       <div class="err" id="errSec"></div>
       <button class="btn" onclick="entrarSec()">Entrar na Secretaria</button>
       <details style="margin-top:14px">
-        <summary>🔑 Mudar senha da Secretaria</summary>
-        <div class="fg" style="margin-top:10px"><label>Senha atual</label><input type="password" id="ssAtual"></div>
-        <div class="fg"><label>Nova senha</label><input type="password" id="ssNova"></div>
-        <div class="fg"><label>Confirmar nova senha</label><input type="password" id="ssConf"></div>
-        <button class="btn sm" onclick="mudarSenhaSec()">Salvar nova senha</button>
-        <div class="err" id="errSenhaSec"></div>
+        <summary>🔑 Redefinição de senha da Secretaria</summary>
+        <p class="hint" style="margin-top:9px">Depois de entrar no ambiente da Secretaria, use o botão <strong>Alterar senha</strong> para criar uma nova senha sem informar a anterior. Se não conseguir acessar a conta, solicite a recuperação ao administrador responsável pelo Supabase.</p>
       </details>
       <div id="savedSec" class="saved-logins"></div>
     </div>
 
     <div id="pProf" class="hidden">
       <div class="fg"><label>Professor(a) — digite seu nome completo</label><input type="text" id="profNome" autocomplete="name" oninput="guardarPreenchimentoProf()" onkeydown="if(event.key==='Enter')$('profSenha').focus()"></div>
-      <div class="fg"><label>Senha</label><input type="password" id="profSenha" autocomplete="current-password" oninput="guardarPreenchimentoProf()" onkeydown="if(event.key==='Enter')entrarProf()"></div>
+      <div class="fg"><label>Senha</label><div class="pass-field"><input type="password" id="profSenha" autocomplete="current-password" oninput="guardarPreenchimentoProf()" onkeydown="if(event.key==='Enter')entrarProf()"><button type="button" class="btn-show-pass" onclick="togglePassword('profSenha',this)" aria-pressed="false">👁 Mostrar</button></div></div>
       <label style="font-size:.82rem;color:#4b5563;display:flex;gap:8px;align-items:center;margin-bottom:14px"><input type="checkbox" id="keepProf"> Manter conectado neste aparelho</label>
       <div class="err" id="errProf"></div>
       <button class="btn" onclick="entrarProf()">Entrar no meu ambiente</button>
       <details style="margin-top:14px">
-        <summary>🔑 Mudar senha do professor</summary>
-        <div class="fg" style="margin-top:10px"><label>Senha atual</label><input type="password" id="psAtual"></div>
-        <div class="fg"><label>Nova senha</label><input type="password" id="psNova"></div>
-        <div class="fg"><label>Confirmar nova senha</label><input type="password" id="psConf"></div>
-        <button class="btn sm" onclick="mudarSenhaProfLogin()">Salvar nova senha</button>
-        <div class="err" id="errSenhaProf"></div>
+        <summary>🔑 Redefinição de senha do professor</summary>
+        <p class="hint" style="margin-top:9px">Depois de entrar no seu ambiente, use o botão <strong>Alterar senha</strong> para criar uma nova senha sem informar a anterior. Se esqueceu a senha e não consegue entrar, solicite à Secretaria uma senha temporária.</p>
       </details>
       <div id="savedProf" class="saved-logins"></div>
     </div>
@@ -221,6 +220,7 @@ document.getElementById('fav').href=LOGO;document.getElementById('aicon').href=L
 document.getElementById('pwaManifest').href=URL.createObjectURL(new Blob([JSON.stringify({name:"CEJA Dr. Gerardo Camelo Madeira",short_name:"CEJA Atendimento",start_url:"./",display:"standalone",background_color:"#073822",theme_color:"#0b5736",icons:[{src:LOGO,sizes:"320x320",type:"image/jpeg"}]})],{type:'application/json'}));
 
 // ===== Supabase: armazenamento seguro + adaptador compatível com o código original =====
+// A redefinição sem senha anterior usa RPC autenticada ceja_change_password_self; sua implementação SQL é necessária no projeto.
 const SUPABASE_URL = 'https://kutcunfxpmrclrxnsoim.supabase.co';
 const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_OwIvGOLgWInfA6o_XcKPTQ_b7quMsTV';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
@@ -403,6 +403,12 @@ function registrarDigitacaoSec(){}
 function normNome(n){return (n||'').normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/\s+/g,' ').trim().toUpperCase()}
 function slug(n){return 'p_'+normNome(n).normalize('NFD').replace(/[\u0300-\u036f]/g,'').toLowerCase().replace(/[^a-z0-9]+/g,'_').replace(/^_|_$/g,'')}
 function nomeProfessorExiste(n){return Object.entries(professores).find(([id,p])=>normNome(p.nome)===normNome(n))}
+function togglePassword(id,button){
+  const input=$(id);if(!input)return;
+  const showing=input.type==='password';input.type=showing?'text':'password';
+  button.textContent=showing?'🙈 Ocultar':'👁 Mostrar';
+  button.setAttribute('aria-pressed',String(showing));
+}
 function loginTab(t){
   $('pSec').classList.toggle('hidden',t!=='sec');
   $('pProf').classList.toggle('hidden',t!=='prof');
@@ -429,46 +435,33 @@ async function entrarSec(){
     await ativarSessao(data,$('keepSec').checked);
   }catch(e){console.error(e);$('errSec').textContent=/incorreta|inválid|login/i.test(e.message)?'Senha incorreta.':'Não foi possível entrar. Confira se o SQL do Supabase foi executado e tente novamente.'}
 }
-async function mudarSenhaSec(){
-  const e=$('errSenhaSec');e.style.color='#dc2626';
-  const atual=$('ssAtual').value,n=$('ssNova').value;
-  if(n.length<6){e.textContent='A nova senha deve ter ao menos 6 caracteres.';return}
-  if(n!==$('ssConf').value){e.textContent='A confirmação não confere.';return}
+async function mudarSenhaAutenticada(role,minLength){
+  const identidade=AUTH.identity||{};
+  if(!AUTH.token||identidade.role!==role){
+    alert('Para redefinir a senha sem informar a anterior, entre primeiro na própria conta.');
+    return;
+  }
+  const rotulo=role==='sec'?'Secretaria':'professor';
+  const nova=prompt(`Digite a nova senha da conta ${rotulo} (mínimo ${minLength} caracteres):`);
+  if(nova===null)return;
+  if(nova.length<minLength){alert(`A nova senha deve ter ao menos ${minLength} caracteres.`);return;}
+  const confirmar=prompt('Confirme a nova senha:');
+  if(confirmar===null)return;
+  if(confirmar!==nova){alert('A confirmação não confere.');return;}
   try{
-    await supabaseRpc('ceja_change_password_by_login',{p_role:'sec',p_name:'Secretaria',p_current:atual,p_new:n});
-    e.style.color='#047857';e.textContent='Nova senha da Secretaria criada com sucesso!';
-    ['ssAtual','ssNova','ssConf'].forEach(x=>$(x).value='');
-  }catch(err){e.style.color='#dc2626';e.textContent=/atual|incorreta/i.test(err.message)?'Senha atual incorreta.':'Não foi possível alterar a senha. Confira a configuração do Supabase.'}
+    // RPC autenticada: o token identifica a conta; a senha anterior não é solicitada.
+    await supabaseRpc('ceja_change_password_self',{p_token:AUTH.token,p_new:nova,p_client_id:CLIENT_ID});
+    alert('Senha alterada com sucesso!');
+  }catch(e){
+    console.error('Falha na redefinição autenticada da senha:',e);
+    const msg=String(e.message||'');
+    if(/ceja_change_password_self|function.*not.*exist|could not find the function|schema cache/i.test(msg)){
+      alert('A tela já está preparada, mas falta habilitar no Supabase a função segura ceja_change_password_self. O banco atual ainda não confirmou esse recurso. Envie a definição SQL das funções de senha para preparar a atualização correta.');
+    }else alert('Não foi possível alterar a senha: '+msg);
+  }
 }
-async function mudarSenhaProfLogin(){
-  const e=$('errSenhaProf');e.style.color='#dc2626';
-  const nome=$('profNome').value.trim().replace(/\s+/g,' '),atual=$('psAtual').value,n=$('psNova').value;
-  if(nome.length<3){e.textContent='Digite primeiro o nome completo do professor cadastrado pela Secretaria.';return}
-  if(n.length<4){e.textContent='A nova senha deve ter ao menos 4 caracteres.';return}
-  if(n!==$('psConf').value){e.textContent='A confirmação não confere.';return}
-  try{
-    await supabaseRpc('ceja_change_password_by_login',{p_role:'prof',p_name:nome,p_current:atual,p_new:n});
-    salvarSenhaProfLocal(nome,n);
-    e.style.color='#047857';e.textContent='Senha do professor alterada com sucesso!';
-    ['psAtual','psNova','psConf'].forEach(x=>$(x).value='');
-  }catch(err){e.textContent=/atual|incorreta/i.test(err.message)?'Senha atual incorreta.':'Não foi possível alterar a senha. Confira nome e conexão.'}
-}
-async function alterarSenhaSec(){
-  const atual=prompt('Digite a senha atual da Secretaria:');if(atual===null)return;
-  const n=prompt('Digite a nova senha (mínimo 6 caracteres):');if(!n)return;if(n.length<6)return alert('Senha muito curta.');
-  if(prompt('Confirme a nova senha:')!==n)return alert('A confirmação não confere.');
-  try{await supabaseRpc('ceja_change_password',{p_token:AUTH.token,p_current:atual,p_new:n,p_client_id:CLIENT_ID});alert('Senha alterada com sucesso!')}
-  catch(e){alert(/atual|incorreta/i.test(e.message)?'Senha atual incorreta.':'Não foi possível alterar a senha: '+e.message)}
-}
-async function alterarSenha(){
-  const atual=prompt('Digite sua senha atual:');if(atual===null)return;
-  const n=prompt('Digite a nova senha (mínimo 4 caracteres):');if(!n)return;if(n.length<4)return alert('Senha muito curta.');
-  if(prompt('Confirme a nova senha:')!==n)return alert('A confirmação não confere.');
-  try{
-    await supabaseRpc('ceja_change_password',{p_token:AUTH.token,p_current:atual,p_new:n,p_client_id:CLIENT_ID});
-    salvarSenhaProfLocal((professores[S.prof]||{}).nome,n);alert('Senha alterada com sucesso!');
-  }catch(e){alert(/atual|incorreta/i.test(e.message)?'Senha atual incorreta.':'Não foi possível alterar a senha: '+e.message)}
-}
+async function alterarSenhaSec(){return mudarSenhaAutenticada('sec',6)}
+async function alterarSenha(){const role=(AUTH.identity||{}).role;return mudarSenhaAutenticada(role,role==='sec'?6:4)}
 async function entrarProf(){
   const nome=$('profNome').value.trim().replace(/\s+/g,' '),senha=$('profSenha').value;
   $('errProf').textContent='';
@@ -551,8 +544,24 @@ function tiposDe(r){const st=new Set();(Array.isArray(r.tipos)?r.tipos:Object.va
 const livre=a=>a==='LEI'||a==='MULTIMEIOS';
 const normF=x=>(x||'').trim().replace(/\s+/g,' ');
 function formasAtendimento(r){return normF(r.forma||r.atendimento||r.tipo)?1:0}
+function numeroQuantidade(v){const n=Number(v);return Number.isFinite(n)&&n>0?Math.floor(n):0}
+function quantidadeTipo(r,i){
+  const q=r&&r.quantidades;
+  if(q&&Object.prototype.hasOwnProperty.call(q,String(i)))return numeroQuantidade(q[i]);
+  // Registros antigos com caixas marcadas passam a contar como uma unidade.
+  return tiposDe(r||{}).includes(i)?1:0;
+}
+function quantidadeLivre(r){
+  if(r&&Object.prototype.hasOwnProperty.call(r,'quantidade'))return numeroQuantidade(r.quantidade);
+  // Compatibilidade com atendimentos antigos que só tinham a forma descrita.
+  return formasAtendimento(r||{})?1:0;
+}
 function areaDoRegistro(r){const mapa=Object.fromEntries(AREAS.map(a=>[akey(a),a]));return mapa[r.ak]||S.area}
-function qtdAtend(r){const area=areaDoRegistro(r);return area==='LEI'||area==='MULTIMEIOS'?formasAtendimento(r):tiposDe(r).filter(i=>(TIPOS_AREA[area]||[]).includes(i)).length}
+function qtdAtend(r){
+  const area=areaDoRegistro(r);
+  if(livre(area))return quantidadeLivre(r);
+  return (TIPOS_AREA[area]||[]).reduce((s,i)=>s+quantidadeTipo(r,i),0);
+}
 function registroTemFrequencia(r){return !!r.frequencia||qtdAtend(r)>0}
 
 function colsDe(rs){
@@ -561,7 +570,14 @@ function colsDe(rs){
   return [...m].sort((a,b)=>a[1].localeCompare(b[1])).map(([k,l])=>({k,l,h:l}));
 }
 function contar(rs,cols){cols=cols||colsDe(rs);const c=cols.map(()=>0);let total=0;
-  rs.forEach(r=>{const ks=livre(S.area)?(normF(r.forma)?[normF(r.forma).toUpperCase()]:[]):tiposDe(r).filter(i=>(TIPOS_AREA[S.area]||[]).includes(i));ks.forEach(k=>{const i=cols.findIndex(x=>x.k===k);if(i>=0)c[i]++});total+=ks.length;});
+  rs.forEach(r=>{
+    if(livre(S.area)){
+      const k=normF(r.forma).toUpperCase(),q=quantidadeLivre(r),i=cols.findIndex(x=>x.k===k);
+      if(k&&i>=0&&q>0){c[i]+=q;total+=q;}
+    }else{
+      (TIPOS_AREA[S.area]||[]).forEach(k=>{const q=quantidadeTipo(r,k),i=cols.findIndex(x=>x.k===k);if(i>=0&&q>0){c[i]+=q;total+=q;}});
+    }
+  });
   return{c,cols,total}}
 const idPorNome=n=>{const e=Object.entries(professores).find(([i,p])=>(p.nome||'').trim().toUpperCase()===(n||'').trim().toUpperCase());return e?e[0]:''};
 function chips(o){return o.cols.map((x,i)=>`<span class="chip">${esc(x.l)}: <b>${o.c[i]}</b></span>`).join('')+`<span class="chip">Total de atendimentos: <b>${o.total}</b></span>`}
@@ -720,7 +736,13 @@ function sitDe(n,m){
 function refDe(tr){const b=`${S.ano}/${S.mes}/${S.dia}/${akey(S.area)}`;return db.ref(tr.dataset.src==='L'?`frequencias/${b}/${tr.dataset.key}`:`atend/${b}/${tr.dataset.pid}/${tr.dataset.key}`)}
 function mountEd(host){
   const ti=tiposArea();
-  host.innerHTML=`<div class="tc"><table class="ed"><thead><tr><th class="col-ord">ORDEM</th><th class="col-nivel">NÍVEL DE ENSINO</th><th class="col-mat">MATRÍCULA</th><th class="col-est">NOME DO<br>ESTUDANTE</th><th class="col-data">DATA</th><th class="col-prof">PROFESSOR<br>QUE ATENDEU</th>${livre(S.area)?'<th class="col-forma">FORMA DE<br>ATENDIMENTO<br>(DIGITADA)</th>':ti.map(i=>`<th class="col-tipo">${TIPOS[i]}</th>`).join('')}<th class="col-avaliacao">AVALIAÇÃO REALIZADA</th><th class="col-pres">PRESENÇA</th><th class="col-sit">SITUAÇÃO DO<br>ESTUDANTE</th><th class="no-exp">AÇÕES</th></tr></thead><tbody class="edb"></tbody></table></div><div class="ed-actions"><button class="btn sm" onclick="maisLinha(this)">➕ Adicionar 1 linha</button><button class="btn sm warn" onclick="retirarLinha(this)">➖ Retirar 1 linha</button><button class="btn sm save" onclick="salvarAlteracoesTela()">💾 Salvar alterações</button><span class="line-status" id="edStatus"></span></div><div class="status-legend"><strong>Situação:</strong> 🟢 Ativo = frequência até 30 dias &nbsp; | &nbsp; 🟡 Pré-Evadido = 31 a 59 dias sem frequência &nbsp; | &nbsp; 🔴 Evadido = 60 dias ou mais sem frequência</div>`;
+  const cabecalhoTipos=livre(S.area)
+    ? '<th class="col-forma">FORMA DE<br>ATENDIMENTO<br>(DIGITADA)</th>'
+    : ti.map(i=>`<th class="col-qtd">${TIPOS[i]}</th>`).join('');
+  const cabecalhoQuantidade=livre(S.area)
+    ? '<th class="col-qtd">QUANTIDADE</th>'
+    : '<th class="col-avaliacao">AVALIAÇÃO REALIZADA</th>';
+  host.innerHTML=`<div class="tc"><table class="ed"><thead><tr><th class="col-ord">ORDEM</th><th class="col-nivel">NÍVEL DE ENSINO</th><th class="col-mat">MATRÍCULA</th><th class="col-est">NOME DO<br>ESTUDANTE</th><th class="col-data">DATA</th><th class="col-prof">PROFESSOR<br>QUE ATENDEU</th>${cabecalhoTipos}${cabecalhoQuantidade}<th class="col-pres">PRESENÇA</th><th class="col-sit">SITUAÇÃO DO<br>ESTUDANTE</th><th class="no-exp">AÇÕES</th></tr></thead><tbody class="edb"></tbody></table></div><div class="ed-actions"><button class="btn sm" onclick="maisLinha(this)">➕ Adicionar 1 linha</button><button class="btn sm warn" onclick="retirarLinha(this)">➖ Retirar 1 linha</button><button class="btn sm save" onclick="salvarAlteracoesTela()">💾 Salvar alterações</button><span class="line-status" id="edStatus"></span></div><div class="status-legend"><strong>Situação:</strong> 🟢 Ativo = frequência até 30 dias &nbsp; | &nbsp; 🟡 Pré-Evadido = 31 a 59 dias sem frequência &nbsp; | &nbsp; 🔴 Evadido = 60 dias ou mais sem frequência. Nos campos de atividade, informe a quantidade realizada no dia (use 0 quando não houver atividade).</div>`;
   const tb=host.querySelector('.edb'),rs=ED.rs||[],tot=Math.max(30,S.rows,rs.length);for(let i=0;i<tot;i++)addRow(tb,rs[i]);
 }
 function renumRows(tb){[...tb.children].forEach((tr,i)=>{const c=tr.querySelector('.col-ord');if(c)c.textContent=i+1})}
@@ -733,7 +755,12 @@ function retirarLinha(b){
 function addRow(tb,r){
   r=r||{frequencia:false};const tr=document.createElement('tr'),ti=tiposArea(),ts=tiposDe(r);
   tr.dataset.key=r.key||'';tr.dataset.pid=r.pid||'';tr.dataset.src=r.src||'';tr.dataset.ts=r.ts||'';
+  tr.dataset.avaliacaoRealizada=r.avaliacaoRealizada||r.avaliacao||r.avaliacao_realizada||'';
   const inp=f=>`<td class="col-${f}"><input class="ci" data-f="${f}" value="${esc(r[f]||'')}" ${f==='mat'?'maxlength="6" inputmode="numeric"':''} oninput="marcarDigitacao(this)" onchange="salvarLinha(this)" autocomplete="off"></td>`;
+  const inputQuantidade=(i)=>{
+    const valor=quantidadeTipo(r,i);
+    return `<td class="col-qtd"><input class="ci qty-input" type="number" min="0" step="1" inputmode="numeric" data-f="q" data-i="${i}" value="${valor||''}" oninput="marcarDigitacao(this)" onchange="salvarLinha(this)" aria-label="Quantidade de ${esc(TIPOS[i])}"></td>`;
+  };
   let pc;
   if(ED.pid)pc=`<td class="l col-prof">${esc(ED.nome)}</td>`;
   else{
@@ -743,10 +770,16 @@ function addRow(tb,r){
     if(!cur&&(r.professor||'').trim()){cur='n:'+r.professor.trim();op.push([cur,r.professor.trim()])}
     pc=`<td class="col-prof"><select class="ci" data-f="prof" onchange="salvarLinha(this)"><option value="">— selecione —</option>${op.map(o=>`<option value="${esc(o[0])}" ${o[0]===cur?'selected':''}>${esc(o[1])}</option>`).join('')}</select></td>`;
   }
-  const autoFreq=ts.length>0 || (livre(S.area)&&normF(r.forma||r.tipo));
-  const tiposHtml=livre(S.area)?`<td class="col-forma"><input class="ci" data-f="forma" value="${esc(r.forma||r.tipo||'')}" oninput="marcarDigitacao(this)" onchange="salvarLinha(this)" autocomplete="off"></td>`:ti.map(i=>`<td class="col-tipo"><input type="checkbox" data-f="t" data-i="${i}" ${ts.includes(i)?'checked':''} onchange="salvarLinha(this)"></td>`).join('');
-  const avaliacaoExistente=r.avaliacaoRealizada||r.avaliacao||r.avaliacao_realizada||'';
-  tr.innerHTML=`<td class="o col-ord">${tb.children.length+1}</td>${inp('nivel')}${inp('mat')}${inp('estudante')}<td class="col-data">${S.dia}/${String(MESES.indexOf(S.mes)+1).padStart(2,'0')}/${S.ano}</td>${pc}${tiposHtml}<td class="col-avaliacao"><input class="ci" data-f="avaliacao" value="${esc(avaliacaoExistente)}" oninput="marcarDigitacao(this)" onchange="salvarLinha(this)" autocomplete="off" aria-label="Avaliação realizada"></td><td class="col-pres"><input type="checkbox" data-f="freq" ${(r.frequencia||autoFreq)?'checked':''} onchange="salvarLinha(this)" aria-label="Presença"></td><td class="sit col-sit">${sitDe(r.estudante,r.mat)}</td><td class="no-exp col-acao"><button class="ib" title="Excluir este atendimento" onclick="delLinha(this)">🗑</button><button class="ib" title="Excluir o aluno deste ano" onclick="excluirAlunoDaLinha(this)">👤</button></td>`;
+  const tiposHtml=livre(S.area)
+    ? `<td class="col-forma"><input class="ci" data-f="forma" value="${esc(r.forma||r.tipo||'')}" oninput="marcarDigitacao(this)" onchange="salvarLinha(this)" autocomplete="off"></td>`
+    : ti.map(i=>inputQuantidade(i)).join('');
+  const temQuantidadeAnterior=Object.prototype.hasOwnProperty.call(r,'quantidade');
+  const quantidadeLegado=temQuantidadeAnterior?numeroQuantidade(r.quantidade):(formasAtendimento(r)?1:0);
+  const quantidadeOuAvaliacao=livre(S.area)
+    ? `<td class="col-qtd"><input class="ci qty-input" type="number" min="0" step="1" inputmode="numeric" data-f="quantidade" value="${quantidadeLegado||''}" oninput="marcarDigitacao(this)" onchange="salvarLinha(this)" aria-label="Quantidade de atendimentos"></td>`
+    : `<td class="col-avaliacao"><input class="ci" data-f="avaliacao" value="${esc(r.avaliacaoRealizada||r.avaliacao||r.avaliacao_realizada||'')}" oninput="marcarDigitacao(this)" onchange="salvarLinha(this)" autocomplete="off" aria-label="Avaliação realizada"></td>`;
+  const autoFreq=qtdAtend(r)>0 || (livre(S.area)&&normF(r.forma||r.tipo));
+  tr.innerHTML=`<td class="o col-ord">${tb.children.length+1}</td>${inp('nivel')}${inp('mat')}${inp('estudante')}<td class="col-data">${S.dia}/${String(MESES.indexOf(S.mes)+1).padStart(2,'0')}/${S.ano}</td>${pc}${tiposHtml}${quantidadeOuAvaliacao}<td class="col-pres"><input type="checkbox" data-f="freq" ${(r.frequencia||autoFreq)?'checked':''} onchange="salvarLinha(this)" aria-label="Presença"></td><td class="sit col-sit">${sitDe(r.estudante,r.mat)}</td><td class="no-exp col-acao"><button class="ib" title="Excluir este atendimento" onclick="delLinha(this)">🗑</button><button class="ib" title="Excluir o aluno deste ano" onclick="excluirAlunoDaLinha(this)">👤</button></td>`;
   tb.appendChild(tr);
 }
 let saveTimers=new WeakMap();
@@ -757,17 +790,27 @@ function marcarDigitacao(i){i.dataset.dirty='1';
 function ac(){return} // mantido por compatibilidade com versões anteriores; não substitui o que o usuário digitou
 
 function salvarLinha(el){
-  const tr=el.closest('tr'),g=f=>tr.querySelector(`[data-f="${f}"]`),f=el.dataset.f;
+  const tr=el.closest('tr'),g=f=>tr.querySelector(`[data-f="${f}"]`);
   let nivel=(g('nivel')?.value||'').trim(),mat=g('mat').value.trim(),est=g('estudante').value.trim();
-  const avaliacaoRealizada=(g('avaliacao')?.value||'').trim();
-  // A matrícula, o nível e o nome são independentes: o sistema nunca substitui o que o usuário digitou.
-  const tipos=[...tr.querySelectorAll('[data-f="t"]:checked')].map(c=>TIPOS[+c.dataset.i]),forma=livre(S.area)?normF(g('forma').value):'',temTipo=tipos.length>0||!!forma;let freq=!!g('freq').checked||temTipo;if(temTipo)g('freq').checked=true;
+  const avaliacaoRealizada=livre(S.area)?(tr.dataset.avaliacaoRealizada||''):(g('avaliacao')?.value||'').trim();
+  const quantidades={};
+  if(!livre(S.area))tiposArea().forEach(i=>{quantidades[i]=numeroQuantidade(tr.querySelector(`[data-f="q"][data-i="${i}"]`)?.value)});
+  const tipos=livre(S.area)?[]:tiposArea().filter(i=>quantidades[i]>0).map(i=>TIPOS[i]);
+  const forma=livre(S.area)?normF(g('forma')?.value||''):'';
+  const quantidade=livre(S.area)?numeroQuantidade(g('quantidade')?.value):0;
+  const somaQuantidades=livre(S.area)?quantidade:Object.values(quantidades).reduce((s,n)=>s+n,0);
+  const temAtividade=somaQuantidades>0||!!forma;
+  let freq=!!g('freq').checked||temAtividade;if(somaQuantidades>0)g('freq').checked=true;
   let pid,nome;if(ED.pid){pid=ED.pid;nome=ED.nome}else{const v=g('prof').value;if(v.startsWith('n:')){pid='_sem';nome=v.slice(2)}else if(v){pid=v;nome=(professores[v]||{}).nome||''}else{pid='_sem';nome=''}}
-  if(!(est||mat||nivel||avaliacaoRealizada||tipos.length||forma)){if(tr.dataset.key)refDe(tr).remove();tr.dataset.key='';tr.dataset.src='';tr.dataset.pid='';tr.dataset.ts='';tr.querySelector('.sit').textContent='';return Promise.resolve()}
+  if(!(est||mat||nivel||avaliacaoRealizada||somaQuantidades>0||forma)){
+    if(tr.dataset.key)refDe(tr).remove();tr.dataset.key='';tr.dataset.src='';tr.dataset.pid='';tr.dataset.ts='';tr.querySelector('.sit').textContent='';return Promise.resolve();
+  }
   const base=db.ref(`atend/${S.ano}/${S.mes}/${S.dia}/${akey(S.area)}/${pid}`);let key=tr.dataset.key;
   if(key&&(tr.dataset.src==='L'||tr.dataset.pid!==pid)){refDe(tr).remove();key=''}if(!key)key=base.push().key;
   const ts=+tr.dataset.ts||Date.now();tr.dataset.key=key;tr.dataset.pid=pid;tr.dataset.src='N';tr.dataset.ts=ts;tr.querySelector('.sit').textContent=sitDe(est,mat);
-  return base.child(key).set({estudante:est,nivel,mat,avaliacaoRealizada,professor:nome,profId:pid,tipos,forma,frequencia:freq,atendimentos:qtdAtend({ak:akey(S.area),tipos,forma}),ts}).then(()=>{const p=$('profSalvo');if(p)p.textContent='✔ Salvo às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})})
+  const registro={estudante:est,nivel,mat,avaliacaoRealizada,professor:nome,profId:pid,tipos,forma,frequencia:freq,atendimentos:qtdAtend({ak:akey(S.area),tipos,quantidades,quantidade,forma}),ts};
+  if(livre(S.area))registro.quantidade=quantidade;else registro.quantidades=quantidades;
+  return base.child(key).set(registro).then(()=>{const p=$('profSalvo');if(p)p.textContent='✔ Salvo às '+new Date().toLocaleTimeString('pt-BR',{hour:'2-digit',minute:'2-digit'})});
 }
 async function salvarAlteracoesTela(){
   const root=S.role==='sec'?$('secBody'):$('profMain'),rows=[...root.querySelectorAll('.edb tr')];if(!rows.length)return alert('Abra a tabela de atendimento diário para salvar as alterações.');
