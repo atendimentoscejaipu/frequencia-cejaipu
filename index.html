@@ -236,10 +236,29 @@ const CLIENT_ID = (() => {
 })();
 const dataListeners = new Set();
 const normalizePath = p => String(p || '').split('/').filter(Boolean).join('/');
+const SYNC_POLL_MS = 4000;
+let realtimeConnected = false;
+let lastSyncOkAt = 0;
+let lastSyncErrorAt = 0;
+let pollTimer = null;
 function snapshotOf(value) { return { val: () => value == null ? null : value, exists: () => value != null }; }
-function updateSyncBadge(online) {
+function updateSyncBadge() {
+  const now = Date.now();
+  const recentlyRead = lastSyncOkAt && (now - lastSyncOkAt) < 18000;
+  let label, online;
+  if (realtimeConnected && recentlyRead) {
+    label = 'Supabase: tempo real ativo'; online = true;
+  } else if (recentlyRead) {
+    label = 'Supabase: conectado — atualização automática ativa'; online = true;
+  } else if (AUTH.token && lastSyncErrorAt && (now - lastSyncErrorAt) < 30000) {
+    label = 'Supabase: falha de conexão — tentando reconectar'; online = false;
+  } else if (AUTH.token) {
+    label = 'Supabase: sincronizando…'; online = false;
+  } else {
+    label = 'Supabase: aguardando login'; online = false;
+  }
   document.querySelectorAll('.sync-badge').forEach(el => {
-    el.textContent = online ? 'Supabase: sincronização em tempo real ativa' : 'Supabase: conectando…';
+    el.textContent = label;
     el.style.color = online ? '#047857' : '#9a3412';
     el.style.background = online ? '#d1fae5' : '#ffedd5';
     el.style.borderColor = online ? '#a7f3d0' : '#fed7aa';
@@ -264,15 +283,38 @@ async function writePath(path, operation, value) {
     p_client_id: CLIENT_ID
   });
 }
+function serializarSnapshot(value) {
+  try { return JSON.stringify(value == null ? null : value); }
+  catch (_) { return String(value); }
+}
 async function refreshOneListener(listener) {
   if (!AUTH.token || !dataListeners.has(listener)) return;
+  // Agrupa sinais simultâneos: uma leitura em curso nunca é duplicada em paralelo.
+  if (listener.inFlight) { listener.pending = true; return; }
+  listener.inFlight = true;
   try {
     const value = await readPath(listener.path);
-    if (dataListeners.has(listener)) listener.callback(snapshotOf(value));
+    const signature = serializarSnapshot(value);
+    lastSyncOkAt = Date.now();
+    lastSyncErrorAt = 0;
+    if (signature !== listener.lastSignature) {
+      listener.lastSignature = signature;
+      if (dataListeners.has(listener)) listener.callback(snapshotOf(value));
+    }
+    updateSyncBadge();
   } catch (error) {
-    console.error('Erro ao atualizar dados Supabase:', error);
+    lastSyncErrorAt = Date.now();
+    console.error('Erro ao atualizar dados Supabase (' + listener.path + '):', error);
     if (/sessão|session|token/i.test(error.message || '')) {
-      updateSyncBadge(false);
+      AUTH.token = '';
+      updateSyncBadge();
+    } else updateSyncBadge();
+  } finally {
+    listener.inFlight = false;
+    if (listener.pending && AUTH.token && dataListeners.has(listener)) {
+      listener.pending = false;
+      // Um único novo ciclo após terminar a leitura atual.
+      queueMicrotask(() => refreshOneListener(listener));
     }
   }
 }
@@ -291,16 +333,38 @@ async function refreshMatchingListeners(signal) {
   });
   await Promise.allSettled(jobs);
 }
+// Realtime envia atualizações assim que a tabela-sinal do Supabase recebe um evento.
+// O evento '*' cobre INSERT, UPDATE e DELETE, evitando depender de UPDATE apenas.
 const realtimeChannel = supabaseClient.channel('ceja-public-sync-signal').on(
   'postgres_changes',
-  { event: 'UPDATE', schema: 'public', table: 'ceja_sync', filter: 'id=eq.1' },
+  { event: '*', schema: 'public', table: 'ceja_sync', filter: 'id=eq.1' },
   payload => {
-    const signal = payload && payload.new;
-    if (!signal) return;
-    if (signal.actor_client_id && String(signal.actor_client_id) === String(CLIENT_ID)) return;
-    refreshMatchingListeners(signal);
+    const signal = payload && (payload.new || payload.old);
+    // Não ignorar eventos deste próprio navegador: os caches locais também precisam atualizar.
+    refreshMatchingListeners(signal && signal.data_root ? signal : null);
   }
-).subscribe(status => updateSyncBadge(status === 'SUBSCRIBED'));
+).subscribe(status => {
+  realtimeConnected = status === 'SUBSCRIBED';
+  if (!realtimeConnected) console.warn('Canal Realtime Supabase:', status);
+  updateSyncBadge();
+});
+// Fallback confiável: mesmo se o Realtime não estiver habilitado na publicação do banco,
+// as telas consultam novamente os caminhos ativos a cada poucos segundos, sem regravar dados.
+async function verificarSincronizacao() {
+  if (!AUTH.token || document.visibilityState === 'hidden') return;
+  await refreshMatchingListeners(null);
+}
+function iniciarVerificacaoSincronizacao() {
+  if (pollTimer) return;
+  pollTimer = setInterval(verificarSincronizacao, SYNC_POLL_MS);
+}
+iniciarVerificacaoSincronizacao();
+document.addEventListener('visibilitychange', () => {
+  if (document.visibilityState === 'visible') verificarSincronizacao();
+});
+window.addEventListener('focus', verificarSincronizacao);
+window.addEventListener('online', verificarSincronizacao);
+
 
 // Interface reduzida compatível com os usos de db.ref() encontrados no index original.
 const db = {
@@ -320,7 +384,7 @@ const db = {
       },
       on(event, callback) {
         if (event !== 'value' || typeof callback !== 'function') throw new Error('Listener inválido.');
-        const listener = { path: clean, callback, ref: this };
+        const listener = { path: clean, callback, ref: this, lastSignature: undefined, inFlight: false, pending: false };
         dataListeners.add(listener);
         refreshOneListener(listener);
         return this;
@@ -349,7 +413,8 @@ async function ativarSessao(info, keep, tokenExistente) {
   montarLoginProfessorDireto();
   if (info.role === 'sec') abrirSec();
   else { S.viaSec = false; abrirProf(info.user_id); }
-  dataListeners.forEach(listener => refreshOneListener(listener));
+  dataListeners.forEach(listener => { listener.lastSignature = undefined; refreshOneListener(listener); });
+  updateSyncBadge();
 }
 async function restaurarSessaoSalva() {
   let saved;
