@@ -236,8 +236,10 @@ const CLIENT_ID = (() => {
 })();
 const dataListeners = new Set();
 const normalizePath = p => String(p || '').split('/').filter(Boolean).join('/');
-const SYNC_POLL_MS = 4000;
+const SYNC_POLL_MS = 3000;
 let realtimeConnected = false;
+let broadcastConnected = false;
+let dataBroadcastChannel = null;
 let lastSyncOkAt = 0;
 let lastSyncErrorAt = 0;
 let pollTimer = null;
@@ -246,7 +248,7 @@ function updateSyncBadge() {
   const now = Date.now();
   const recentlyRead = lastSyncOkAt && (now - lastSyncOkAt) < 18000;
   let label, online;
-  if (realtimeConnected && recentlyRead) {
+  if ((realtimeConnected || broadcastConnected) && recentlyRead) {
     label = 'Supabase: tempo real ativo'; online = true;
   } else if (recentlyRead) {
     label = 'Supabase: conectado — atualização automática ativa'; online = true;
@@ -275,13 +277,19 @@ async function readPath(path) {
 }
 async function writePath(path, operation, value) {
   if (!AUTH.token) throw new Error('Sua sessão terminou. Entre novamente.');
-  return await supabaseRpc('ceja_data_write', {
+  const cleanPath = normalizePath(path);
+  // Primeiro confirma a gravação no banco. O aviso Realtime nunca substitui a gravação.
+  const result = await supabaseRpc('ceja_data_write', {
     p_token: AUTH.token,
-    p_path: normalizePath(path),
+    p_path: cleanPath,
     p_operation: operation,
     p_value: value === undefined ? null : value,
     p_client_id: CLIENT_ID
   });
+  // Envia apenas um sinal, sem nomes, matrículas ou conteúdo dos atendimentos.
+  // Os outros ambientes relêem os dados autorizados diretamente do Supabase.
+  avisarClientesRealtime(cleanPath, operation);
+  return result;
 }
 function serializarSnapshot(value) {
   try { return JSON.stringify(value == null ? null : value); }
@@ -333,23 +341,56 @@ async function refreshMatchingListeners(signal) {
   });
   await Promise.allSettled(jobs);
 }
-// Realtime envia atualizações assim que a tabela-sinal do Supabase recebe um evento.
-// O evento '*' cobre INSERT, UPDATE e DELETE, evitando depender de UPDATE apenas.
+// Canal 1: sinais do banco. Sem filtro por id, pois a tabela-sinal pode não usar id=1.
+// O evento '*' cobre INSERT, UPDATE e DELETE.
 const realtimeChannel = supabaseClient.channel('ceja-public-sync-signal').on(
   'postgres_changes',
-  { event: '*', schema: 'public', table: 'ceja_sync', filter: 'id=eq.1' },
-  payload => {
-    const signal = payload && (payload.new || payload.old);
-    // Não ignorar eventos deste próprio navegador: os caches locais também precisam atualizar.
-    refreshMatchingListeners(signal && signal.data_root ? signal : null);
+  { event: '*', schema: 'public', table: 'ceja_sync' },
+  () => {
+    // O evento apenas avisa. A leitura autorizada continua sendo feita pela RPC do Supabase.
+    refreshMatchingListeners(null);
   }
 ).subscribe(status => {
   realtimeConnected = status === 'SUBSCRIBED';
-  if (!realtimeConnected) console.warn('Canal Realtime Supabase:', status);
+  if (!realtimeConnected) console.warn('Canal Postgres Changes Supabase:', status);
   updateSyncBadge();
 });
-// Fallback confiável: mesmo se o Realtime não estiver habilitado na publicação do banco,
-// as telas consultam novamente os caminhos ativos a cada poucos segundos, sem regravar dados.
+
+// Canal 2: Broadcast de baixa carga enviado depois de cada gravação confirmada.
+// Assim, a sincronização entre navegadores/dispositivos não depende de um trigger em ceja_sync.
+// O canal é público, mas transporta somente um aviso técnico; nenhum dado de estudante é enviado.
+dataBroadcastChannel = supabaseClient.channel('ceja-live-data-sync', {
+  config: { broadcast: { self: false, ack: true } }
+});
+dataBroadcastChannel.on('broadcast', { event: 'ceja-data-changed' }, () => {
+  if (AUTH.token) refreshMatchingListeners(null);
+});
+dataBroadcastChannel.subscribe(status => {
+  broadcastConnected = status === 'SUBSCRIBED';
+  if (!broadcastConnected) console.warn('Canal Broadcast Supabase:', status);
+  updateSyncBadge();
+  if (broadcastConnected && AUTH.token) verificarSincronizacao();
+});
+function avisarClientesRealtime(path, operation) {
+  if (!dataBroadcastChannel || !broadcastConnected) return;
+  const parts = normalizePath(path).split('/').filter(Boolean);
+  dataBroadcastChannel.send({
+    type: 'broadcast',
+    event: 'ceja-data-changed',
+    payload: {
+      root: parts[0] || '',
+      scope: parts[1] || '',
+      operation: String(operation || 'set'),
+      origin: CLIENT_ID,
+      emitted_at: Date.now()
+    }
+  }).then(status => {
+    if (status !== 'ok') console.warn('Aviso Realtime não confirmado:', status);
+  }).catch(error => console.warn('Falha ao avisar outros ambientes; a verificação periódica continuará ativa:', error));
+}
+
+// Fallback: consultas autenticadas periódicas cobrem indisponibilidade de Realtime/Broadcast.
+// Essa rotina é somente leitura e nunca modifica os registros do banco.
 async function verificarSincronizacao() {
   if (!AUTH.token || document.visibilityState === 'hidden') return;
   await refreshMatchingListeners(null);
