@@ -175,7 +175,10 @@ table.ed .disabled-activity{opacity:.38;background:#f1f5f9;cursor:not-allowed}
 .registry-detail table{min-width:1000px}
 .registry-detail th{white-space:normal;line-height:1.2}
 .registry-detail td{text-align:left;vertical-align:top;white-space:normal;overflow-wrap:anywhere}
+.registry-area-select{width:100%;min-width:190px;padding:7px 9px;border:1px solid var(--bd);border-radius:6px;background:#fff;color:#1f2937;font:inherit;font-weight:bold}
+.registry-area-select:disabled{opacity:.65;cursor:wait}
 .registry-live{font-size:.78rem;color:#047857;font-weight:bold;margin:6px 0 12px}
+.registry-completion-card{border-color:#92400e;color:#92400e}.registry-completion-card:hover{background:#92400e;color:#fff}.registry-conclude{margin:4px 10px 12px 0}
 @media(max-width:900px){table.ed{min-width:2450px}.registry-card{min-height:90px}}
 
 </style>
@@ -508,11 +511,12 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const akey=a=>a.replace(/[^a-zA-Z0-9]/g,'_');
 const hoje=new Date();
-const S={rows:30,role:null,prof:null,viaSec:false,ano:String(hoje.getFullYear()),mes:MESES[hoje.getMonth()],dia:String(hoje.getDate()).padStart(2,'0'),area:'LINGUAGENS',modo:'DIARIO',sub:'menu',profSel:null,sit:'ATIVO',registroView:'',registroArea:'',registroAlunoNome:'',registroAlunoMat:''};
+const S={rows:30,role:null,prof:null,viaSec:false,ano:String(hoje.getFullYear()),mes:MESES[hoje.getMonth()],dia:String(hoje.getDate()).padStart(2,'0'),area:'LINGUAGENS',modo:'DIARIO',sub:'menu',profSel:null,sit:'ATIVO',registroView:'',registroArea:'',registroAlunoNome:'',registroAlunoMat:'',registroAnoConclusao:''};
 let professores={},dadosAtend={},dadosLegacy={},flat=[],sitCache={},SUG={estudante:[],mat:[],nivel:[],componente:[]},alunoInfo={};
 let ED={pid:null,nome:'',rs:[]},SIT={},pend=false,semeado=false;
 let historicoEscolarProf=false; // mantido para compatibilidade com estados antigos
 let registrosEstudantes=[];
+let estudantesConcluidos=[];
 let registrosEstudantesAno='';
 let registrosEstudantesAssinatura='';
 let registrosEstudantesCarregando=false;
@@ -609,7 +613,7 @@ async function entrarProf(){
   }catch(e){console.error(e);$('errProf').textContent=/incorreta|inválid|login|encontrado/i.test(e.message)?'Nome não encontrado ou senha incorreta.':'Não foi possível entrar. Confira se o SQL do Supabase foi executado e tente novamente.'}
 }
 function sair(){
-  salvarSessao(null,false);AUTH.token='';AUTH.sessionId='';AUTH.identity=null;S.role=null;S.viaSec=false;S.registroView='';S.registroArea='';S.registroAlunoNome='';S.registroAlunoMat='';
+  salvarSessao(null,false);AUTH.token='';AUTH.sessionId='';AUTH.identity=null;S.role=null;S.viaSec=false;S.registroView='';S.registroArea='';S.registroAlunoNome='';S.registroAlunoMat='';S.registroAnoConclusao='';
   ['secApp','profApp'].forEach(x=>$(x).classList.add('hidden'));$('login').classList.remove('hidden');$('secSenha').value='';$('errSec').textContent='';
   try{history.replaceState({ceja:CEJA_HISTORY_MARK,view:'login'},'',location.href)}catch(e){}
   preencherLoginProf();preencherLoginSec();loginTab('sec');renderLoginsSalvos();
@@ -624,10 +628,10 @@ function abrirProf(id,preservarRegistro=false){
 
 /* ---------- HISTÓRICO DE NAVEGAÇÃO ---------- */
 const CEJA_HISTORY_MARK='cejaApp';
-function estadoAtual(){return {ano:S.ano,mes:S.mes,dia:S.dia,area:S.area,modo:S.modo,sub:S.sub,profSel:S.profSel,sit:S.sit,role:S.role,prof:S.prof,viaSec:S.viaSec,registroView:S.registroView,registroArea:S.registroArea,registroAlunoNome:S.registroAlunoNome,registroAlunoMat:S.registroAlunoMat};}
+function estadoAtual(){return {ano:S.ano,mes:S.mes,dia:S.dia,area:S.area,modo:S.modo,sub:S.sub,profSel:S.profSel,sit:S.sit,role:S.role,prof:S.prof,viaSec:S.viaSec,registroView:S.registroView,registroArea:S.registroArea,registroAlunoNome:S.registroAlunoNome,registroAlunoMat:S.registroAlunoMat,registroAnoConclusao:S.registroAnoConclusao};}
 function gravarEstadoNavegacao(substituir=false){try{const st={ceja:CEJA_HISTORY_MARK,...estadoAtual()};(substituir?history.replaceState.bind(history):history.pushState.bind(history))(st,'',location.href)}catch(e){}}
 function aplicarEstadoNavegacao(st){if(!st||st.ceja!==CEJA_HISTORY_MARK)return false;
-  Object.assign(S,{ano:st.ano||S.ano,mes:st.mes||S.mes,dia:st.dia||S.dia,area:st.area||S.area,modo:st.modo||S.modo,sub:st.sub||S.sub,profSel:st.profSel||null,sit:st.sit||'ATIVO',role:st.role||S.role,prof:st.prof||S.prof,viaSec:!!st.viaSec,registroView:st.registroView||'',registroArea:st.registroArea||'',registroAlunoNome:st.registroAlunoNome||'',registroAlunoMat:st.registroAlunoMat||'',rows:30});
+  Object.assign(S,{ano:st.ano||S.ano,mes:st.mes||S.mes,dia:st.dia||S.dia,area:st.area||S.area,modo:st.modo||S.modo,sub:st.sub||S.sub,profSel:st.profSel||null,sit:st.sit||'ATIVO',role:st.role||S.role,prof:st.prof||S.prof,viaSec:!!st.viaSec,registroView:st.registroView||'',registroArea:st.registroArea||'',registroAlunoNome:st.registroAlunoNome||'',registroAlunoMat:st.registroAlunoMat||'',registroAnoConclusao:st.registroAnoConclusao||'',rows:30});
   if(S.role==='sec'){ $('login').classList.add('hidden');$('profApp').classList.add('hidden');$('secApp').classList.remove('hidden');ouvirAno();render(); }
   else if(S.role==='prof'&&S.prof&&professores[S.prof]){abrirProf(S.prof,true);}
   return true;
@@ -1023,15 +1027,19 @@ function atualizarRegistrosEstudantes(force=false){
   if(!AUTH.token||S.role!=='prof'||!S.registroView)return Promise.resolve();
   if(registrosEstudantesCarregando){registrosEstudantesPendente=registrosEstudantesPendente||force;return Promise.resolve();}
   const anoSolicitado=String(S.ano);registrosEstudantesCarregando=true;
-  return supabaseRpc('ceja_student_registry_read',{p_token:AUTH.token,p_year:anoSolicitado})
-    .then(data=>{
+  return Promise.all([
+    supabaseRpc('ceja_student_registry_read',{p_token:AUTH.token,p_year:anoSolicitado}),
+    supabaseRpc('ceja_student_completion_read',{p_token:AUTH.token})
+  ])
+    .then(([data,concluidos])=>{
       if(String(S.ano)!==anoSolicitado)return;
       const lista=Array.isArray(data)?data:[];
-      const assinatura=JSON.stringify(lista);
+      const concluintes=Array.isArray(concluidos)?concluidos:[];
+      const assinatura=JSON.stringify([lista,concluintes]);
       registrosEstudantesAno=anoSolicitado;
       registrosEstudantesErro='';
       if(assinatura!==registrosEstudantesAssinatura){
-        registrosEstudantes=lista;registrosEstudantesAssinatura=assinatura;
+        registrosEstudantes=lista;estudantesConcluidos=concluintes;registrosEstudantesAssinatura=assinatura;
         if(S.role==='prof'&&S.registroView)renderProf();
       }
     })
@@ -1047,19 +1055,29 @@ function atualizarRegistrosEstudantes(force=false){
     });
 }
 function abrirRegistrosEstudantes(){
-  navegarApp(()=>{S.registroView='areas';S.registroArea='';S.registroAlunoNome='';S.registroAlunoMat='';});
+  navegarApp(()=>{S.registroView='areas';S.registroArea='';S.registroAlunoNome='';S.registroAlunoMat='';S.registroAnoConclusao='';});
 }
 function fecharRegistrosEstudantes(){
-  navegarApp(()=>{S.registroView='';S.registroArea='';S.registroAlunoNome='';S.registroAlunoMat='';});
+  navegarApp(()=>{S.registroView='';S.registroArea='';S.registroAlunoNome='';S.registroAlunoMat='';S.registroAnoConclusao='';});
 }
 function escolherAreaRegistro(area){
-  navegarApp(()=>{S.registroView='alunos';S.registroArea=area;S.registroAlunoNome='';S.registroAlunoMat='';});
+  navegarApp(()=>{S.registroView='alunos';S.registroArea=area;S.registroAlunoNome='';S.registroAlunoMat='';S.registroAnoConclusao='';});
 }
 function escolherAlunoRegistro(nome,mat){
   navegarApp(()=>{S.registroView='detalhe';S.registroAlunoNome=nome;S.registroAlunoMat=mat;});
 }
+function abrirConcluintesPorAno(){
+  navegarApp(()=>{S.registroView='concluintes';S.registroAnoConclusao='';S.registroAlunoNome='';S.registroAlunoMat='';});
+}
+function escolherAnoConclusao(ano){
+  navegarApp(()=>{S.registroView='concluintes-alunos';S.registroAnoConclusao=String(ano);S.registroAlunoNome='';S.registroAlunoMat='';});
+}
+function escolherConcluinte(nome,mat){
+  const c=conclusaoDoAluno(nome,mat);
+  navegarApp(()=>{S.registroView='concluinte-detalhe';S.registroAlunoNome=nome;S.registroAlunoMat=mat;S.registroArea=c?c.area:(S.registroArea||'');});
+}
 function voltarRegistroEstudantes(view){
-  navegarApp(()=>{S.registroView=view;if(view==='areas'){S.registroArea='';S.registroAlunoNome='';S.registroAlunoMat=''}else if(view==='alunos'){S.registroAlunoNome='';S.registroAlunoMat=''}});
+  navegarApp(()=>{S.registroView=view;if(view==='areas'){S.registroArea='';S.registroAlunoNome='';S.registroAlunoMat='';S.registroAnoConclusao=''}else if(view==='alunos'){S.registroAlunoNome='';S.registroAlunoMat=''}else if(view==='concluintes'){S.registroAnoConclusao='';S.registroAlunoNome='';S.registroAlunoMat=''}else if(view==='concluintes-alunos'){S.registroAlunoNome='';S.registroAlunoMat=''}});
 }
 function nomeAreaRegistro(area){
   if(area==='LINGUAGENS')return 'LINGUAGENS';
@@ -1073,29 +1091,35 @@ function areaKeyRegistro(area){
   return akey('CIÊNCIAS DA NATUREZA E MATEMÁTICA');
 }
 function registroPertenceAreaEstudante(r,area){
+  // A area gravada na classificacao atual do estudante prevalece sobre a area
+  // original do atendimento. Assim, mudar a area move o estudante entre listas.
+  const areaAtual=String(r.student_area||'').trim();
+  if(areaAtual)return areaAtual===area;
   if(r.area_key!==areaKeyRegistro(area))return false;
   if(area==='LINGUAGENS'||area==='CIÊNCIAS HUMANAS')return true;
   const q=r.quantidades||{};
   const praticaMatematica=numeroQuantidade(q[5])>0;
   const praticaNatureza=numeroQuantidade(q[4])>0;
-  const componente=normNome(r.componente||'');
-  // Quando há quantidades específicas, elas prevalecem sobre o texto do componente.
+  const componente=normNome(r.component||r.componente||'');
   if(praticaMatematica||praticaNatureza){
     return area==='MATEMÁTICA'?praticaMatematica:praticaNatureza;
   }
-  if(area==='MATEMÁTICA'){
-    if(/MATEM|ALGEBRA|GEOMETRIA/.test(componente))return true;
-  }else{
-    if(/NATUREZA|BIOLOG|QUIM|FISIC/.test(componente))return true;
-  }
-  // O banco original agrupa Matemática e Ciências da Natureza na mesma área.
-  // Registros antigos sem componente/prática específica aparecem nas duas
-  // categorias para não ocultar estudantes já cadastrados.
-  return numeroQuantidade(q[4])===0&&numeroQuantidade(q[5])===0&&!componente;
+  if(area==='MATEMÁTICA')return /MATEM|ALGEBRA|GEOMETRIA/.test(componente);
+  return /NATUREZA|BIOLOG|QUIM|FISIC/.test(componente) ||
+    (numeroQuantidade(q[4])===0&&numeroQuantidade(q[5])===0&&!componente);
+}
+function areaSugeridaRegistro(r){
+  if(['LINGUAGENS','MATEMÁTICA','CIÊNCIAS DA NATUREZA','CIÊNCIAS HUMANAS'].includes(r.student_area))return r.student_area;
+  if(r.area_key===akey('LINGUAGENS'))return 'LINGUAGENS';
+  if(r.area_key===akey('CIÊNCIAS HUMANAS'))return 'CIÊNCIAS HUMANAS';
+  const q=r.quantidades||{},componente=normNome(r.component||r.componente||'');
+  if(numeroQuantidade(q[5])>0||/MATEM|ALGEBRA|GEOMETRIA/.test(componente))return 'MATEMÁTICA';
+  if(numeroQuantidade(q[4])>0||/NATUREZA|BIOLOG|QUIM|FISIC/.test(componente))return 'CIÊNCIAS DA NATUREZA';
+  return S.registroArea||'MATEMÁTICA';
 }
 function chaveAlunoRegistro(r){return normNome(r.student)+'___'+String(r.mat||'').trim().toUpperCase()}
 function registrosDaAreaEstudante(area){
-  return registrosEstudantes.filter(r=>String(r.student||'').trim()&&registroPertenceAreaEstudante(r,area));
+  return registrosEstudantes.filter(r=>String(r.student||'').trim()&&!String(r.completion_year||'').trim()&&registroPertenceAreaEstudante(r,area));
 }
 function dataRegistroEstudante(r){
   const meses={'JANEIRO':0,'FEVEREIRO':1,'MARÇO':2,'ABRIL':3,'MAIO':4,'JUNHO':5,'JULHO':6,'AGOSTO':7,'SETEMBRO':8,'OUTUBRO':9,'NOVEMBRO':10,'DEZEMBRO':11};
@@ -1114,9 +1138,119 @@ function montarListaAlunosRegistro(area){
   return [...agrupados.values()].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
 }
 function registrosDoAlunoSelecionado(){
-  const area=S.registroArea,nome=normNome(S.registroAlunoNome),mat=String(S.registroAlunoMat||'').trim().toUpperCase();
-  return registrosDaAreaEstudante(area).filter(r=>normNome(r.student)===nome&&String(r.mat||'').trim().toUpperCase()===mat)
+  const nome=normNome(S.registroAlunoNome),mat=String(S.registroAlunoMat||'').trim().toUpperCase();
+  return registrosEstudantes.filter(r=>String(r.student||'').trim()&&normNome(r.student)===nome&&String(r.mat||'').trim().toUpperCase()===mat)
     .sort((a,b)=>dataRegistroEstudante(a)-dataRegistroEstudante(b));
+}
+
+function concluintesPorAno(){
+  const grupos=new Map();
+  estudantesConcluidos.forEach(c=>{
+    const ano=String(c.completion_year||'').trim();
+    if(!/^\d{4}$/.test(ano))return;
+    if(!grupos.has(ano))grupos.set(ano,[]);
+    grupos.get(ano).push(c);
+  });
+  return [...grupos.entries()].sort((a,b)=>Number(b[0])-Number(a[0]));
+}
+function concluintesDoAno(ano){
+  return estudantesConcluidos.filter(c=>String(c.completion_year)===String(ano))
+    .sort((a,b)=>String(a.student||'').localeCompare(String(b.student||''),'pt-BR'));
+}
+function conclusaoDoAluno(nome,mat){
+  const n=normNome(nome),m=String(mat||'').trim().toUpperCase();
+  return estudantesConcluidos.find(c=>normNome(c.student)===n&&String(c.mat||'').trim().toUpperCase()===m)||null;
+}
+function dataConclusao(c){
+  if(!c||!c.completed_at)return '—';
+  const d=new Date(c.completed_at);
+  return Number.isNaN(d.getTime())?'—':d.toLocaleDateString('pt-BR');
+}
+
+async function concluirEstudanteRegistro(){
+  const anoPadrao=String(new Date().getFullYear());
+  const ano=prompt('Informe o ano de conclusao do estudante:',anoPadrao);
+  if(ano===null)return;
+  const anoFinal=String(ano).trim();
+  if(!/^\d{4}$/.test(anoFinal))return alert('Informe o ano com quatro digitos, por exemplo 2026.');
+  const area=S.registroArea||areaSugeridaRegistro(registrosDoAlunoSelecionado()[0]||{});
+  const msg=`Confirma a conclusao de ${S.registroAlunoNome} no ano ${anoFinal}?\n\nO estudante saira das listas de acompanhamento e sera arquivado em Concluintes por Ano. Os atendimentos anteriores serao preservados.`;
+  if(!confirm(msg))return;
+  const status=$('conclusaoStatus');
+  if(status)status.textContent='Registrando conclusao...';
+  try{
+    await supabaseRpc('ceja_student_completion_set',{
+      p_token:AUTH.token,p_student:S.registroAlunoNome,p_mat:S.registroAlunoMat||'',
+      p_completion_year:anoFinal,p_area:area
+    });
+    registrosEstudantes.forEach(r=>{
+      if(normNome(r.student)===normNome(S.registroAlunoNome)&&String(r.mat||'').trim().toUpperCase()===String(S.registroAlunoMat||'').trim().toUpperCase()){
+        r.completion_year=anoFinal;r.student_area=area;
+      }
+    });
+    registrosEstudantesAssinatura='';
+    await atualizarRegistrosEstudantes(true);
+    navegarApp(()=>{S.registroView='concluintes-alunos';S.registroAnoConclusao=anoFinal;});
+    alert('Conclusao registrada. O estudante foi encaminhado para Concluintes por Ano.');
+  }catch(e){
+    console.error('Falha ao registrar conclusao:',e);
+    if(status)status.textContent='Nao foi possivel registrar a conclusao: '+String(e.message||e);
+    alert('Nao foi possivel registrar a conclusao. Confira se o SQL atualizado foi executado no Supabase.\n\n'+String(e.message||e));
+  }
+}
+async function reabrirEstudanteConcluido(){
+  const c=conclusaoDoAluno(S.registroAlunoNome,S.registroAlunoMat);
+  const area=(c&&c.area)||S.registroArea||'LINGUAGENS';
+  if(!confirm(`Reabrir o acompanhamento de ${S.registroAlunoNome}? O aluno sairá do arquivo de concluintes e voltará à área ${nomeAreaRegistro(area)}.`))return;
+  try{
+    await supabaseRpc('ceja_student_completion_set',{
+      p_token:AUTH.token,p_student:S.registroAlunoNome,p_mat:S.registroAlunoMat||'',
+      p_completion_year:'',p_area:area
+    });
+    estudantesConcluidos=estudantesConcluidos.filter(x=>!(normNome(x.student)===normNome(S.registroAlunoNome)&&String(x.mat||'').trim().toUpperCase()===String(S.registroAlunoMat||'').trim().toUpperCase()));
+    registrosEstudantes.forEach(r=>{
+      if(normNome(r.student)===normNome(S.registroAlunoNome)&&String(r.mat||'').trim().toUpperCase()===String(S.registroAlunoMat||'').trim().toUpperCase())r.completion_year=null;
+    });
+    registrosEstudantesAssinatura='';
+    await atualizarRegistrosEstudantes(true);
+    navegarApp(()=>{S.registroView='alunos';S.registroArea=area;S.registroAnoConclusao='';S.registroAlunoNome='';S.registroAlunoMat='';});
+    alert('Acompanhamento reaberto. O estudante voltou para a lista da sua área.');
+  }catch(e){
+    console.error('Falha ao reabrir estudante:',e);
+    alert('Nao foi possivel reabrir o estudante. Confira o SQL do Supabase.\n\n'+String(e.message||e));
+  }
+}
+
+async function alterarAreaRegistroEstudante(select){
+  const novaArea=String(select.value||'').trim();
+  const opcoes=['LINGUAGENS','MATEMÁTICA','CIÊNCIAS DA NATUREZA','CIÊNCIAS HUMANAS'];
+  if(!opcoes.includes(novaArea))return;
+  const status=$('registroAreaStatus'),areaAnterior=S.registroArea;
+  select.disabled=true;
+  if(status)status.textContent='Salvando nova area do estudante...';
+  try{
+    await supabaseRpc('ceja_student_area_set',{
+      p_token:AUTH.token,
+      p_student:S.registroAlunoNome,
+      p_mat:S.registroAlunoMat||'',
+      p_area:novaArea
+    });
+    registrosEstudantes.forEach(r=>{
+      if(normNome(r.student)===normNome(S.registroAlunoNome)&&String(r.mat||'').trim().toUpperCase()===String(S.registroAlunoMat||'').trim().toUpperCase())r.student_area=novaArea;
+    });
+    registrosEstudantesAssinatura='';
+    S.registroArea=novaArea;
+    if(status)status.textContent='Estudante transferido para '+nomeAreaRegistro(novaArea)+'. A lista da area anterior sera atualizada.';
+    renderProf();
+    await atualizarRegistrosEstudantes(true);
+    alert('Área do estudante atualizada para '+nomeAreaRegistro(novaArea)+'. Ele será exibido nessa área e deixará de aparecer na área anterior.');
+  }catch(e){
+    console.error('Falha ao alterar a area do estudante:',e);
+    select.value=areaAnterior;
+    select.disabled=false;
+    if(status)status.textContent='Nao foi possivel alterar a area: '+String(e.message||e);
+    alert('Nao foi possivel alterar a area do estudante. Confira se o SQL atualizado foi executado no Supabase.\n\n'+String(e.message||e));
+  }
 }
 function renderRegistrosEstudantes(){
   const comum=registrosEstudantesErro
@@ -1124,15 +1258,34 @@ function renderRegistrosEstudantes(){
     : `<div class="registry-live">● Atualização automática: os dados acompanham os atendimentos diários salvos pelos professores.</div>`;
   if(S.registroView==='areas'){
     const areas=['LINGUAGENS','MATEMÁTICA','CIÊNCIAS DA NATUREZA','CIÊNCIAS HUMANAS'];
-    return `<div class="areaTag">REGISTROS DOS ESTUDANTES — ${S.ano}</div>${comum}<div class="registry-nav">${areas.map(a=>`<button class="registry-card" onclick="escolherAreaRegistro('${a}')">${a}<small>Consultar estudantes e avaliações atuais</small></button>`).join('')}</div>`;
+    return `<div class="areaTag">REGISTROS DOS ESTUDANTES — ${S.ano}</div>${comum}<div class="registry-nav">${areas.map(a=>`<button class="registry-card" onclick="escolherAreaRegistro('${a}')">${a}<small>Consultar estudantes e avaliações atuais</small></button>`).join('')}</div><div class="registry-nav"><button class="registry-card registry-completion-card" onclick="abrirConcluintesPorAno()">CONCLUINTES POR ANO<small>Consultar estudantes que tiveram a conclusão registrada</small></button></div>`;
+  }
+  if(S.registroView==='concluintes'){
+    const grupos=concluintesPorAno();
+    return `<button class="btn sm alt registry-back" onclick="voltarRegistroEstudantes('areas')">← Voltar às áreas</button><div class="areaTag">CONCLUINTES POR ANO</div>${comum}<div class="registry-nav">${grupos.map(([ano,lista])=>`<button class="registry-card" onclick="escolherAnoConclusao('${ano}')">${ano}<small>${lista.length} estudante(s) concluinte(s)</small></button>`).join('')||'<div class="nd">Ainda não há estudantes com conclusão registrada.</div>'}</div>`;
+  }
+  if(S.registroView==='concluintes-alunos'){
+    const ano=S.registroAnoConclusao,lista=concluintesDoAno(ano);
+    return `<button class="btn sm alt registry-back" onclick="voltarRegistroEstudantes('concluintes')">← Voltar aos anos</button><div class="areaTag">CONCLUINTES — ${esc(ano)}</div>${comum}<div class="sum"><div class="t">Estudantes que concluíram em ${esc(ano)}</div><div class="d"><span>Total: <strong>${lista.length}</strong></span></div></div><div class="registry-list">${lista.map(c=>`<button class="registry-student" data-registry-name="${esc(c.student)}" data-registry-mat="${esc(c.mat||'')}" onclick="escolherConcluinte(this.dataset.registryName,this.dataset.registryMat)"><strong>${esc(c.student)}</strong><span>Matrícula: ${esc(c.mat||'Não informada')} · Área: ${esc(nomeAreaRegistro(c.area))} · Conclusão: ${dataConclusao(c)}</span></button>`).join('')||'<div class="nd">Nenhum concluinte encontrado neste ano.</div>'}</div>`;
+  }
+  if(S.registroView==='concluinte-detalhe'){
+    const c=conclusaoDoAluno(S.registroAlunoNome,S.registroAlunoMat);
+    const area=(c&&c.area)||S.registroArea;
+    const reg=registrosDoAlunoSelecionado();
+    return `<button class="btn sm alt registry-back" onclick="voltarRegistroEstudantes('concluintes-alunos')">← Voltar aos concluintes</button><div class="areaTag">REGISTRO DO CONCLUINTE</div>${comum}<div class="sum"><div class="t">${esc(S.registroAlunoNome)}</div><div class="d"><span>Matrícula: <strong>${esc(S.registroAlunoMat||'Não informada')}</strong></span><span>Área: <strong>${esc(nomeAreaRegistro(area))}</strong></span><span>Ano de conclusão: <strong>${esc(c?c.completion_year:S.registroAnoConclusao)}</strong></span><span>Registrada em: <strong>${dataConclusao(c)}</strong></span></div></div><div class="registry-live">Os atendimentos anteriores permanecem preservados no histórico do sistema.</div><button class="btn sm warn" onclick="reabrirEstudanteConcluido()">↩ Reabrir acompanhamento</button>${reg.length?`<div class="sec-t">Registros de atendimento disponíveis no ano ${S.ano}</div><div class="tc registry-detail"><table><thead><tr><th>DATA</th><th>ÁREA</th><th>COMPONENTE</th><th>REGISTRO DE ATENDIMENTO</th><th>PROFESSOR</th></tr></thead><tbody>${reg.map(r=>`<tr><td>${fmt(dataRegistroEstudante(r))}</td><td>${esc(nomeAreaRegistro(r.student_area||area))}</td><td>${esc(r.component||'—')}</td><td>${esc(r.service_record||r.forma||'—')}</td><td>${esc(r.teacher||'—')}</td></tr>`).join('')}</tbody></table></div>`:''}`;
   }
   if(S.registroView==='alunos'){
     const area=S.registroArea,lista=montarListaAlunosRegistro(area);
     return `<button class="btn sm alt registry-back" onclick="voltarRegistroEstudantes('areas')">← Voltar às áreas</button><div class="areaTag">${esc(nomeAreaRegistro(area))} — ESTUDANTES</div>${comum}<div class="sum"><div class="t">Estudantes com registros de avaliação — ${S.ano}</div><div class="d"><span>Total: <strong>${lista.length}</strong></span></div></div><div class="registry-list">${lista.map(a=>`<button class="registry-student" data-registry-name="${esc(a.nome)}" data-registry-mat="${esc(a.matricula)}" onclick="escolherAlunoRegistro(this.dataset.registryName,this.dataset.registryMat)"><strong>${esc(a.nome)}</strong><span>Matrícula: ${esc(a.matricula||'Não informada')} · Último registro: ${fmt(a.ultima)}</span></button>`).join('')||'<div class="nd">Nenhum estudante encontrado nesta área para o ano selecionado.</div>'}</div>`;
   }
   const registros=registrosDoAlunoSelecionado();
-  const linhas=registros.map(r=>`<tr><td>${fmt(dataRegistroEstudante(r))}</td><td>${esc(nomeAreaRegistro(S.registroArea))}</td><td>${esc(r.component||'—')}</td><td>${esc(r.service_record||r.forma||'—')}</td><td>${esc(r.teacher||'—')}</td></tr>`).join('');
-  return `<button class="btn sm alt registry-back" onclick="voltarRegistroEstudantes('alunos')">← Voltar aos estudantes</button><div class="areaTag">REGISTRO DO ESTUDANTE</div>${comum}<div class="sum"><div class="t">${esc(S.registroAlunoNome)}</div><div class="d"><span>Matrícula: <strong>${esc(S.registroAlunoMat||'Não informada')}</strong></span><span>Área: <strong>${esc(nomeAreaRegistro(S.registroArea))}</strong></span></div></div><div class="tc registry-detail"><table><thead><tr><th>DATA</th><th>ÁREA DE CONHECIMENTO</th><th>COMPONENTE</th><th>REGISTRO DE ATENDIMENTO</th><th>PROFESSOR</th></tr></thead><tbody>${linhas||'<tr><td colspan="5" class="nd">Nenhum registro disponível para este estudante.</td></tr>'}</tbody></table></div>`;
+  const opcoesArea=['LINGUAGENS','MATEMÁTICA','CIÊNCIAS DA NATUREZA','CIÊNCIAS HUMANAS'];
+  const linhas=registros.map(r=>{
+    const area=areaSugeridaRegistro(r);
+    const seletor=`<select class="registry-area-select" aria-label="Área atual do estudante" onchange="alterarAreaRegistroEstudante(this)">${opcoesArea.map(a=>`<option value="${a}" ${a===area?'selected':''}>${esc(nomeAreaRegistro(a))}</option>`).join('')}</select>`;
+    return `<tr><td>${fmt(dataRegistroEstudante(r))}</td><td>${seletor}</td><td>${esc(r.component||'—')}</td><td>${esc(r.service_record||r.forma||'—')}</td><td>${esc(r.teacher||'—')}</td></tr>`;
+  }).join('');
+  return `<button class="btn sm alt registry-back" onclick="voltarRegistroEstudantes('alunos')">← Voltar aos estudantes</button><div class="areaTag">REGISTRO DO ESTUDANTE</div>${comum}<div class="sum"><div class="t">${esc(S.registroAlunoNome)}</div><div class="d"><span>Matrícula: <strong>${esc(S.registroAlunoMat||'Não informada')}</strong></span><span>Área atual: <strong>${esc(nomeAreaRegistro(S.registroArea))}</strong></span></div></div><div id="registroAreaStatus" class="registry-live">Altere a coluna ÁREA para transferir o estudante para outra área. A mudança será aplicada em todos os registros dele.</div><button class="btn sm warn registry-conclude" onclick="concluirEstudanteRegistro()">✓ CONCLUSÃO</button><span id="conclusaoStatus" class="registry-live"></span><div class="tc registry-detail"><table><thead><tr><th>DATA</th><th>ÁREA</th><th>COMPONENTE</th><th>REGISTRO DE ATENDIMENTO</th><th>PROFESSOR</th></tr></thead><tbody>${linhas||'<tr><td colspan="5" class="nd">Nenhum registro disponível para este estudante.</td></tr>'}</tbody></table></div>`;
 }
 function renderProf(){
   const p=professores[S.prof];if(!p)return;
