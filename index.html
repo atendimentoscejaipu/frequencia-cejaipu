@@ -221,8 +221,8 @@ document.getElementById('pwaManifest').href=URL.createObjectURL(new Blob([JSON.s
 
 // ===== Supabase: armazenamento seguro + adaptador compatível com o código original =====
 // A redefinição sem senha anterior usa RPC autenticada ceja_change_password_self; sua implementação SQL é necessária no projeto.
-const SUPABASE_URL = 'https://kutcunfxpmrclrxnsoim.supabase.co';
-const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_OwIvGOLgWInfA6o_XcKPTQ_b7quMsTV';
+const SUPABASE_URL = 'https://ukozbnzskqllarfbmkca.supabase.co';
+const SUPABASE_PUBLISHABLE_KEY = 'sb_publishable_76sKksy2SluwGBFfm5sh5w_YhZCnrnj';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_PUBLISHABLE_KEY, {
   auth: { persistSession: false, autoRefreshToken: false, detectSessionInUrl: false }
 });
@@ -236,10 +236,8 @@ const CLIENT_ID = (() => {
 })();
 const dataListeners = new Set();
 const normalizePath = p => String(p || '').split('/').filter(Boolean).join('/');
-const SYNC_POLL_MS = 3000;
+const SYNC_POLL_MS = 4000;
 let realtimeConnected = false;
-let broadcastConnected = false;
-let dataBroadcastChannel = null;
 let lastSyncOkAt = 0;
 let lastSyncErrorAt = 0;
 let pollTimer = null;
@@ -248,7 +246,7 @@ function updateSyncBadge() {
   const now = Date.now();
   const recentlyRead = lastSyncOkAt && (now - lastSyncOkAt) < 18000;
   let label, online;
-  if ((realtimeConnected || broadcastConnected) && recentlyRead) {
+  if (realtimeConnected && recentlyRead) {
     label = 'Supabase: tempo real ativo'; online = true;
   } else if (recentlyRead) {
     label = 'Supabase: conectado — atualização automática ativa'; online = true;
@@ -275,10 +273,27 @@ async function readPath(path) {
   if (!AUTH.token) throw new Error('Sua sessão terminou. Entre novamente.');
   return await supabaseRpc('ceja_data_read', { p_token: AUTH.token, p_path: normalizePath(path) });
 }
+// Atualiza os listeners locais depois de cada gravação confirmada no Supabase.
+// As gravações feitas em sequência são agrupadas para evitar leituras repetidas
+// quando o professor preenche várias linhas rapidamente.
+const pendingWriteSignals = new Map();
+let pendingWriteRefreshTimer = null;
+function agendarAtualizacaoAposGravacao(path) {
+  const parts = normalizePath(path).split('/').filter(Boolean);
+  if (!parts.length) return;
+  const signal = { data_root: parts[0], scope_key: parts.length > 1 ? parts[1] : null };
+  pendingWriteSignals.set(parts[0] + '/' + (signal.scope_key || ''), signal);
+  if (pendingWriteRefreshTimer) clearTimeout(pendingWriteRefreshTimer);
+  pendingWriteRefreshTimer = setTimeout(async () => {
+    pendingWriteRefreshTimer = null;
+    const signals = [...pendingWriteSignals.values()];
+    pendingWriteSignals.clear();
+    for (const signal of signals) await refreshMatchingListeners(signal);
+  }, 180);
+}
 async function writePath(path, operation, value) {
   if (!AUTH.token) throw new Error('Sua sessão terminou. Entre novamente.');
   const cleanPath = normalizePath(path);
-  // Primeiro confirma a gravação no banco. O aviso Realtime nunca substitui a gravação.
   const result = await supabaseRpc('ceja_data_write', {
     p_token: AUTH.token,
     p_path: cleanPath,
@@ -286,9 +301,7 @@ async function writePath(path, operation, value) {
     p_value: value === undefined ? null : value,
     p_client_id: CLIENT_ID
   });
-  // Envia apenas um sinal, sem nomes, matrículas ou conteúdo dos atendimentos.
-  // Os outros ambientes relêem os dados autorizados diretamente do Supabase.
-  avisarClientesRealtime(cleanPath, operation);
+  agendarAtualizacaoAposGravacao(cleanPath);
   return result;
 }
 function serializarSnapshot(value) {
@@ -341,56 +354,23 @@ async function refreshMatchingListeners(signal) {
   });
   await Promise.allSettled(jobs);
 }
-// Canal 1: sinais do banco. Sem filtro por id, pois a tabela-sinal pode não usar id=1.
-// O evento '*' cobre INSERT, UPDATE e DELETE.
+// Realtime envia atualizações assim que a tabela-sinal do Supabase recebe um evento.
+// O evento '*' cobre INSERT, UPDATE e DELETE, evitando depender de UPDATE apenas.
 const realtimeChannel = supabaseClient.channel('ceja-public-sync-signal').on(
   'postgres_changes',
-  { event: '*', schema: 'public', table: 'ceja_sync' },
-  () => {
-    // O evento apenas avisa. A leitura autorizada continua sendo feita pela RPC do Supabase.
-    refreshMatchingListeners(null);
+  { event: '*', schema: 'public', table: 'ceja_sync', filter: 'id=eq.1' },
+  payload => {
+    const signal = payload && (payload.new || payload.old);
+    // Não ignorar eventos deste próprio navegador: os caches locais também precisam atualizar.
+    refreshMatchingListeners(signal && signal.data_root ? signal : null);
   }
 ).subscribe(status => {
   realtimeConnected = status === 'SUBSCRIBED';
-  if (!realtimeConnected) console.warn('Canal Postgres Changes Supabase:', status);
+  if (!realtimeConnected) console.warn('Canal Realtime Supabase:', status);
   updateSyncBadge();
 });
-
-// Canal 2: Broadcast de baixa carga enviado depois de cada gravação confirmada.
-// Assim, a sincronização entre navegadores/dispositivos não depende de um trigger em ceja_sync.
-// O canal é público, mas transporta somente um aviso técnico; nenhum dado de estudante é enviado.
-dataBroadcastChannel = supabaseClient.channel('ceja-live-data-sync', {
-  config: { broadcast: { self: false, ack: true } }
-});
-dataBroadcastChannel.on('broadcast', { event: 'ceja-data-changed' }, () => {
-  if (AUTH.token) refreshMatchingListeners(null);
-});
-dataBroadcastChannel.subscribe(status => {
-  broadcastConnected = status === 'SUBSCRIBED';
-  if (!broadcastConnected) console.warn('Canal Broadcast Supabase:', status);
-  updateSyncBadge();
-  if (broadcastConnected && AUTH.token) verificarSincronizacao();
-});
-function avisarClientesRealtime(path, operation) {
-  if (!dataBroadcastChannel || !broadcastConnected) return;
-  const parts = normalizePath(path).split('/').filter(Boolean);
-  dataBroadcastChannel.send({
-    type: 'broadcast',
-    event: 'ceja-data-changed',
-    payload: {
-      root: parts[0] || '',
-      scope: parts[1] || '',
-      operation: String(operation || 'set'),
-      origin: CLIENT_ID,
-      emitted_at: Date.now()
-    }
-  }).then(status => {
-    if (status !== 'ok') console.warn('Aviso Realtime não confirmado:', status);
-  }).catch(error => console.warn('Falha ao avisar outros ambientes; a verificação periódica continuará ativa:', error));
-}
-
-// Fallback: consultas autenticadas periódicas cobrem indisponibilidade de Realtime/Broadcast.
-// Essa rotina é somente leitura e nunca modifica os registros do banco.
+// Fallback confiável: mesmo se o Realtime não estiver habilitado na publicação do banco,
+// as telas consultam novamente os caminhos ativos a cada poucos segundos, sem regravar dados.
 async function verificarSincronizacao() {
   if (!AUTH.token || document.visibilityState === 'hidden') return;
   await refreshMatchingListeners(null);
@@ -449,6 +429,8 @@ async function ativarSessao(info, keep, tokenExistente) {
   AUTH.token = token;
   AUTH.sessionId = info.session_id || '';
   AUTH.identity = { ...info, access_token: token };
+  // Força nova leitura após login/troca de sessão, sem reutilizar snapshots antigos.
+  dataListeners.forEach(listener => { listener.lastSignature = undefined; });
   salvarSessao({ role: info.role, id: info.user_id, accessToken: token }, keep);
   professores = (await db.ref('professores').once('value')).val() || {};
   montarLoginProfessorDireto();
@@ -922,6 +904,7 @@ async function salvarAlteracoesTela(){
   const root=S.role==='sec'?$('secBody'):$('profMain'),rows=[...root.querySelectorAll('.edb tr')];if(!rows.length)return alert('Abra a tabela de atendimento diário para salvar as alterações.');
   try{
     await Promise.all(rows.map(tr=>{const base=tr.querySelector('[data-f="estudante"]')||tr.querySelector('[data-f="mat"]');return base?salvarLinha(base):Promise.resolve()}));
+    // Leitura de confirmação: a tela só informa sucesso após consultar novamente o ano salvo.
     await refreshMatchingListeners({data_root:'atend',scope_key:String(S.ano)});
     const st=root.querySelector('#edStatus');if(st){st.textContent='✔ Alterações salvas com sucesso.';setTimeout(()=>{if(document.contains(st))st.textContent=''},3500)}
   }
