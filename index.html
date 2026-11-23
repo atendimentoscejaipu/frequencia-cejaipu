@@ -151,6 +151,8 @@ table.ed th.col-data,table.ed td.col-data{width:88px}
 table.ed th.col-prof,table.ed td.col-prof{width:165px}
 table.ed th.col-componente,table.ed td.col-componente{width:145px}
 table.ed th.col-avaliacao,table.ed td.col-avaliacao{width:175px}
+table.ed th.col-redacao,table.ed td.col-redacao{width:88px}
+table.ed td.col-redacao input.qty-input{min-width:0!important;width:100%;text-align:center;font-weight:bold}
 table.ed th.col-intervencao,table.ed td.col-intervencao{width:180px}
 table.ed th.col-vivencia,table.ed td.col-vivencia{width:190px}
 table.ed th.col-free-activity,table.ed td.col-free-activity{width:260px}
@@ -519,7 +521,7 @@ const $=id=>document.getElementById(id);
 const esc=s=>String(s??'').replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 const akey=a=>a.replace(/[^a-zA-Z0-9]/g,'_');
 const hoje=new Date();
-const S={rows:30,role:null,prof:null,viaSec:false,ano:String(hoje.getFullYear()),mes:MESES[hoje.getMonth()],dia:String(hoje.getDate()).padStart(2,'0'),area:'LINGUAGENS',modo:'DIARIO',sub:'menu',profSel:null,sit:'ATIVO',registroView:'',registroArea:'',registroAlunoNome:'',registroAlunoMat:'',registroAnoConclusao:''};
+const S={rows:30,role:null,prof:null,viaSec:false,ano:String(hoje.getFullYear()),mes:MESES[hoje.getMonth()],dia:String(hoje.getDate()).padStart(2,'0'),area:'LINGUAGENS',modo:'DIARIO',sub:'menu',profSel:null,sit:'ATIVO',registroView:'',registroArea:'',registroAlunoNome:'',registroAlunoMat:'',registroAlunoNivel:'',registroAnoConclusao:''};
 let professores={},dadosAtend={},dadosLegacy={},flat=[],sitCache={},SUG={estudante:[],mat:[],nivel:[],componente:[]},alunoInfo={};
 let ED={pid:null,nome:'',rs:[]},SIT={},pend=false,semeado=false;
 let historicoEscolarProf=false; // mantido para compatibilidade com estados antigos
@@ -621,7 +623,7 @@ async function entrarProf(){
   }catch(e){console.error(e);$('errProf').textContent=/incorreta|inválid|login|encontrado/i.test(e.message)?'Nome não encontrado ou senha incorreta.':'Não foi possível entrar. Confira se o SQL do Supabase foi executado e tente novamente.'}
 }
 function sair(){
-  salvarSessao(null,false);AUTH.token='';AUTH.sessionId='';AUTH.identity=null;S.role=null;S.viaSec=false;S.registroView='';S.registroArea='';S.registroAlunoNome='';S.registroAlunoMat='';S.registroAnoConclusao='';
+  salvarSessao(null,false);AUTH.token='';AUTH.sessionId='';AUTH.identity=null;S.role=null;S.viaSec=false;S.registroView='';S.registroArea='';S.registroAlunoNome='';S.registroAlunoMat='';S.registroAlunoNivel='';S.registroAnoConclusao='';
   ['secApp','profApp'].forEach(x=>$(x).classList.add('hidden'));$('login').classList.remove('hidden');$('secSenha').value='';$('errSec').textContent='';
   try{history.replaceState({ceja:CEJA_HISTORY_MARK,view:'login'},'',location.href)}catch(e){}
   preencherLoginProf();preencherLoginSec();loginTab('sec');renderLoginsSalvos();
@@ -629,17 +631,17 @@ function sair(){
 function voltarSec(){S.viaSec=false;S.role='sec';$('profApp').classList.add('hidden');$('secApp').classList.remove('hidden');S.modo='PROFESSORES';gravarEstadoNavegacao(true);render()}
 function abrirSec(){S.role='sec';$('login').classList.add('hidden');$('profApp').classList.add('hidden');$('secApp').classList.remove('hidden');gravarEstadoNavegacao(true);ouvirAno();render();renderLoginsSalvos()}
 function abrirProf(id,preservarRegistro=false){
-  const p=professores[id];if(!p)return;historicoEscolarProf=false;if(!preservarRegistro){S.registroView='';S.registroArea='';S.registroAlunoNome='';S.registroAlunoMat=''}S.role='prof';S.prof=id;S.area=p.area;S.rows=30;S.mes=MESES[hoje.getMonth()];S.dia=String(hoje.getDate()).padStart(2,'0');
+  const p=professores[id];if(!p)return;historicoEscolarProf=false;if(!preservarRegistro){S.registroView='';S.registroArea='';S.registroAlunoNome='';S.registroAlunoMat='';S.registroAlunoNivel=''}S.role='prof';S.prof=id;S.area=p.area;S.rows=30;S.mes=MESES[hoje.getMonth()];S.dia=String(hoje.getDate()).padStart(2,'0');
   $('login').classList.add('hidden');$('secApp').classList.add('hidden');$('profApp').classList.remove('hidden');$('btnVoltarSec').classList.toggle('hidden',!S.viaSec);gravarEstadoNavegacao(true);
   $('profWho').innerHTML=`<strong>${esc(p.nome)}</strong>`;$('profTag').textContent=`ÁREA DE CONHECIMENTO: ${p.area} — ${p.nome}`;ouvirAno();render()
 }
 
 /* ---------- HISTÓRICO DE NAVEGAÇÃO ---------- */
 const CEJA_HISTORY_MARK='cejaApp';
-function estadoAtual(){return {ano:S.ano,mes:S.mes,dia:S.dia,area:S.area,modo:S.modo,sub:S.sub,profSel:S.profSel,sit:S.sit,role:S.role,prof:S.prof,viaSec:S.viaSec,registroView:S.registroView,registroArea:S.registroArea,registroAlunoNome:S.registroAlunoNome,registroAlunoMat:S.registroAlunoMat,registroAnoConclusao:S.registroAnoConclusao};}
+function estadoAtual(){return {ano:S.ano,mes:S.mes,dia:S.dia,area:S.area,modo:S.modo,sub:S.sub,profSel:S.profSel,sit:S.sit,role:S.role,prof:S.prof,viaSec:S.viaSec,registroView:S.registroView,registroArea:S.registroArea,registroAlunoNome:S.registroAlunoNome,registroAlunoMat:S.registroAlunoMat,registroAlunoNivel:S.registroAlunoNivel,registroAnoConclusao:S.registroAnoConclusao};}
 function gravarEstadoNavegacao(substituir=false){try{const st={ceja:CEJA_HISTORY_MARK,...estadoAtual()};(substituir?history.replaceState.bind(history):history.pushState.bind(history))(st,'',location.href)}catch(e){}}
 function aplicarEstadoNavegacao(st){if(!st||st.ceja!==CEJA_HISTORY_MARK)return false;
-  Object.assign(S,{ano:st.ano||S.ano,mes:st.mes||S.mes,dia:st.dia||S.dia,area:st.area||S.area,modo:st.modo||S.modo,sub:st.sub||S.sub,profSel:st.profSel||null,sit:st.sit||'ATIVO',role:st.role||S.role,prof:st.prof||S.prof,viaSec:!!st.viaSec,registroView:st.registroView||'',registroArea:st.registroArea||'',registroAlunoNome:st.registroAlunoNome||'',registroAlunoMat:st.registroAlunoMat||'',registroAnoConclusao:st.registroAnoConclusao||'',rows:30});
+  Object.assign(S,{ano:st.ano||S.ano,mes:st.mes||S.mes,dia:st.dia||S.dia,area:st.area||S.area,modo:st.modo||S.modo,sub:st.sub||S.sub,profSel:st.profSel||null,sit:st.sit||'ATIVO',role:st.role||S.role,prof:st.prof||S.prof,viaSec:!!st.viaSec,registroView:st.registroView||'',registroArea:st.registroArea||'',registroAlunoNome:st.registroAlunoNome||'',registroAlunoMat:st.registroAlunoMat||'',registroAlunoNivel:st.registroAlunoNivel||'',registroAnoConclusao:st.registroAnoConclusao||'',rows:30});
   if(S.role==='sec'){ $('login').classList.add('hidden');$('profApp').classList.add('hidden');$('secApp').classList.remove('hidden');ouvirAno();render(); }
   else if(S.role==='prof'&&S.prof&&professores[S.prof]){abrirProf(S.prof,true);}
   return true;
@@ -691,6 +693,8 @@ const tipoIdx=t=>TIPOS.findIndex(x=>x.toUpperCase()===(t||'').trim().toUpperCase
 function tiposDe(r){const st=new Set();(Array.isArray(r.tipos)?r.tipos:Object.values(r.tipos||{})).forEach(t=>{const i=tipoIdx(t);if(i>=0)st.add(i)});const j=tipoIdx(r.tipo);if(j>=0)st.add(j);return[...st]}
 const livre=a=>a==='LEI'||a==='MULTIMEIOS';
 const normF=x=>(x||'').trim().replace(/\s+/g,' ');
+function normalizarNivel(valor){const n=normNome(valor);if(n.includes('FUNDAMENTAL'))return 'Fundamental';if(n==='MEDIO'||n.includes('ENSINO MEDIO'))return 'Médio';return '';}
+function nivelChave(valor){return normalizarNivel(valor)||'SEM_NIVEL';}
 function formasAtendimento(r){return normF(r.forma||r.atendimento||r.tipo)?1:0}
 function numeroQuantidade(v){const n=Number(v);return Number.isFinite(n)&&n>0?Math.floor(n):0}
 function quantidadeTipo(r,i){
@@ -763,7 +767,7 @@ function setDataCalendario(valor){const m=String(valor||'').match(/^(\d{4})-(\d{
 function navegarApp(mut){mut();S.rows=30;gravarEstadoNavegacao(false);render()}
 const setMes=m=>navegarApp(()=>{S.mes=m}),setDia=d=>navegarApp(()=>{S.dia=d});
 function setArea(a){navegarApp(()=>{S.area=a;if(S.modo==='DIARIO')S.sub='menu'})}
-function setModo(m){navegarApp(()=>{S.modo=m;S.sub='menu';if(S.role==='sec'){if(m==='ESTUDANTES'){S.registroView='areas';S.registroArea='';S.registroAlunoNome='';S.registroAlunoMat=''}else S.registroView=''}});if(S.role==='sec'&&m==='ESTUDANTES')atualizarRegistrosEstudantes(true)}
+function setModo(m){navegarApp(()=>{S.modo=m;S.sub='menu';if(S.role==='sec'){if(m==='ESTUDANTES'){S.registroView='areas';S.registroArea='';S.registroAlunoNome='';S.registroAlunoMat='';S.registroAlunoNivel=''}else S.registroView=''}});if(S.role==='sec'&&m==='ESTUDANTES')atualizarRegistrosEstudantes(true)}
 
 /* ---------- SECRETARIA ---------- */
 const editando=()=>{const a=document.activeElement;return !!(a&&a.closest&&a.closest('.edb'))};
@@ -801,26 +805,27 @@ function secDiario(ak){
    <div class="sec-t">Acumulado de ${S.mes}</div><div class="chips">${chips(contar(todos.filter(r=>r.mes===S.mes)))}</div><div class="edHost"></div>`;
 }
 function secEstudantes(){
-  const m={};flat.forEach(r=>{const k=r.estudante.trim().toUpperCase()+'___'+(r.mat||'').trim().toUpperCase();const d=dataReg(r);
-    if(!m[k])m[k]={n:r.estudante.trim(),mat:r.mat||'',d:null,c:'',p:''};
+  const m={};flat.forEach(r=>{const k=sKey(r.estudante,r.mat,r.nivel);const d=dataReg(r);
+    if(!m[k])m[k]={n:r.estudante.trim(),mat:r.mat||'',nivel:normalizarNivel(r.nivel),d:null,c:'',p:''};
     if(registroTemFrequencia(r)&&(!m[k].d||d>=m[k].d)){m[k].d=d;m[k].c=r.componente||r.tipo||((qtdAtend(r)>0)?(tiposDe(r).map(i=>TIPOS_PL[i]).join(', ')):r.forma||'');m[k].p=r.professor||''}
   });
   const l=Object.values(m).sort((a,b)=>a.n.localeCompare(b.n));
-  return `<div class="sum"><div class="t">Estudantes — ${S.ano}</div><div class="d"><span>Total: <strong>${l.length}</strong></span></div></div><div class="tc"><table class="exp"><thead><tr><th class="ex-ord">ORDEM</th><th class="ex-est">NOME DO<br>ESTUDANTE</th><th class="ex-mat">NÚMERO DE<br>MATRÍCULA</th><th class="ex-data">ÚLTIMA<br>FREQUÊNCIA</th><th class="ex-comp">ÚLTIMO COMPONENTE<br>CURRICULAR</th><th class="ex-prof">ÚLTIMO PROFESSOR</th><th class="ex-acao">AÇÃO</th></tr></thead><tbody>${
-   l.map((a,i)=>`<tr><td class="o ex-ord">${i+1}</td><td class="l ex-est">${esc(a.n)}</td><td class="ex-mat">${esc(a.mat)}</td><td class="ex-data">${fmt(a.d)}</td><td class="l ex-comp">${esc(a.c)}</td><td class="l ex-prof">${esc(a.p)}</td><td class="del-aluno"><button class="btn sm delete-student" data-nome="${esc(a.n)}" data-mat="${esc(a.mat)}" onclick="excluirAlunoBotao(this)">🗑 Excluir aluno</button></td></tr>`).join('')||'<tr><td colspan=7 class="nd">Sem estudantes.</td></tr>'}</tbody></table></div>`;
+  return `<div class="sum"><div class="t">Estudantes — ${S.ano}</div><div class="d"><span>Total: <strong>${l.length}</strong></span></div></div><div class="tc"><table class="exp"><thead><tr><th class="ex-ord">ORDEM</th><th class="ex-est">NOME DO<br>ESTUDANTE</th><th class="ex-mat">MATRÍCULA</th><th>NÍVEL</th><th class="ex-data">ÚLTIMA<br>FREQUÊNCIA</th><th class="ex-comp">ÚLTIMO COMPONENTE<br>CURRICULAR</th><th class="ex-prof">ÚLTIMO PROFESSOR</th><th class="ex-acao">AÇÃO</th></tr></thead><tbody>${
+   l.map((a,i)=>`<tr><td class="o ex-ord">${i+1}</td><td class="l ex-est">${esc(a.n)}</td><td class="ex-mat">${esc(a.mat)}</td><td>${esc(a.nivel||'—')}</td><td class="ex-data">${fmt(a.d)}</td><td class="l ex-comp">${esc(a.c)}</td><td class="l ex-prof">${esc(a.p)}</td><td class="del-aluno"><button class="btn sm delete-student" data-nome="${esc(a.n)}" data-mat="${esc(a.mat)}" data-nivel="${esc(a.nivel||'')}" onclick="excluirAlunoBotao(this)">🗑 Excluir aluno</button></td></tr>`).join('')||'<tr><td colspan=8 class="nd">Sem estudantes.</td></tr>'}</tbody></table></div>`;
 }
-const sKey=(n,mat)=>((n||'').trim().toUpperCase()+'___'+((mat||'').trim().toUpperCase()||'SEM_MAT')).replace(/[.#$/[\]]/g,'_');
+const sKey=(n,mat,nivel)=>(((mat||'').trim().toUpperCase()||((n||'').trim().toUpperCase()+'___SEM_MAT'))+'___'+nivelChave(nivel)).replace(/[.#$/[\]]/g,'_');
+const sKeyLegado=(n,mat)=>((n||'').trim().toUpperCase()+'___'+((mat||'').trim().toUpperCase()||'SEM_MAT')).replace(/[.#$/[\]]/g,'_');
 function secSituacao(ak){
-  const m={};flat.filter(r=>r.ak===ak).forEach(r=>{const k=sKey(r.estudante,r.mat),d=dataReg(r);if(!m[k])m[k]={k,n:r.estudante.trim(),mat:r.mat||'',d:null};if(registroTemFrequencia(r)&&(!m[k].d||d>m[k].d))m[k].d=d});
+  const m={};flat.filter(r=>r.ak===ak).forEach(r=>{const k=sKey(r.estudante,r.mat,r.nivel),d=dataReg(r);if(!m[k])m[k]={k,n:r.estudante.trim(),mat:r.mat||'',nivel:normalizarNivel(r.nivel),d:null};if(registroTemFrequencia(r)&&(!m[k].d||d>m[k].d))m[k].d=d});
   const g={ATIVO:[],PRE_EVADIDO:[],EVADIDO:[],CONCLUDENTE:[]};
-  Object.values(m).forEach(a=>{const c=sitCache[a.k];if(c&&c.concluido){a.dc=c.data;g.CONCLUDENTE.push(a);return}
+  Object.values(m).forEach(a=>{const c=sitCache[a.k]||sitCache[sKeyLegado(a.n,a.mat)];if(c&&c.concluido){a.dc=c.data;g.CONCLUDENTE.push(a);return}
     a.dias=a.d?Math.floor((new Date()-a.d)/864e5):999;(a.dias<=30?g.ATIVO:a.dias<60?g.PRE_EVADIDO:g.EVADIDO).push(a)});
   const C=[['ATIVO','🟢','ATIVO','Até 30 dias'],['PRE_EVADIDO','🟡','PRÉ-EVADIDO','31 a 59 dias'],['EVADIDO','🔴','EVADIDOS','60 dias ou mais'],['CONCLUDENTE','🔵','CONCLUDENTES','Concluíram']];
   const ic={ATIVO:'🟢',PRE_EVADIDO:'🟡',EVADIDO:'🔴',CONCLUDENTE:'🔵'};
   let h=`<div class="sc">${C.map(c=>`<div class="scard ${S.sit===c[0]?'on':''}" onclick="navegarApp(()=>{S.sit='${c[0]}'})"><div style="font-size:1.6rem">${c[1]}</div><b>${c[2]}</b><span>${c[3]}</span><div class="chip" style="margin-top:6px">${g[c[0]].length} alunos</div></div>`).join('')}</div>`;
   const l=g[S.sit].sort((a,b)=>a.n.localeCompare(b.n));
-  return h+`<div class="tc"><table class="exp"><thead><tr><th>ORDEM</th><th>STATUS</th><th>NOME DO ESTUDANTE</th><th>MATRÍCULA</th><th>ÚLTIMA<br>FREQUÊNCIA</th><th>DIAS<br>DECORRIDOS</th><th>DATA DA<br>CONCLUSÃO</th><th>CONCLUSÃO</th><th>AÇÃO</th></tr></thead><tbody>${
-   l.map((a,i)=>`<tr><td class="o">${i+1}</td><td>${ic[S.sit]}</td><td class="l">${esc(a.n)}</td><td>${esc(a.mat)}</td><td>${fmt(a.d)}</td><td>${a.d?a.dias:'-'}</td><td>${esc(a.dc||'-')}</td><td><button class="btn sm ${S.sit==='CONCLUDENTE'?'alt':''}" onclick="concluir('${a.k}',${S.sit==='CONCLUDENTE'})">${S.sit==='CONCLUDENTE'?'Reabrir':'Concluir'}</button></td><td class="del-aluno"><button class="btn sm delete-student" data-nome="${esc(a.n)}" data-mat="${esc(a.mat)}" onclick="excluirAlunoBotao(this)">🗑 Excluir aluno</button></td></tr>`).join('')||'<tr><td colspan=9 class="nd">Nenhum estudante nesta situação.</td></tr>'}</tbody></table></div>`;
+  return h+`<div class="tc"><table class="exp"><thead><tr><th>ORDEM</th><th>STATUS</th><th>NOME DO ESTUDANTE</th><th>MATRÍCULA</th><th>NÍVEL</th><th>ÚLTIMA<br>FREQUÊNCIA</th><th>DIAS<br>DECORRIDOS</th><th>DATA DA<br>CONCLUSÃO</th><th>CONCLUSÃO</th><th>AÇÃO</th></tr></thead><tbody>${
+   l.map((a,i)=>`<tr><td class="o">${i+1}</td><td>${ic[S.sit]}</td><td class="l">${esc(a.n)}</td><td>${esc(a.mat)}</td><td>${esc(a.nivel||'—')}</td><td>${fmt(a.d)}</td><td>${a.d?a.dias:'-'}</td><td>${esc(a.dc||'-')}</td><td><button class="btn sm ${S.sit==='CONCLUDENTE'?'alt':''}" onclick="concluir('${a.k}',${S.sit==='CONCLUDENTE'})">${S.sit==='CONCLUDENTE'?'Reabrir':'Concluir'}</button></td><td class="del-aluno"><button class="btn sm delete-student" data-nome="${esc(a.n)}" data-mat="${esc(a.mat)}" data-nivel="${esc(a.nivel||'')}" onclick="excluirAlunoBotao(this)">🗑 Excluir aluno</button></td></tr>`).join('')||'<tr><td colspan=10 class="nd">Nenhum estudante nesta situação.</td></tr>'}</tbody></table></div>`;
 }
 async function concluir(k,reabrir){const r=db.ref(`situacaoAlunos/${S.ano}/${akey(S.area)}/${k}`);try{if(reabrir)await r.remove();else await r.set({concluido:true,data:new Date().toLocaleDateString('pt-BR')});sitCache=(await db.ref(`situacaoAlunos/${S.ano}/${akey(S.area)}`).once('value')).val()||{};render()}catch(e){alert('Não foi possível atualizar a situação do estudante: '+e.message)}}
 function secMensal(ak){
@@ -882,10 +887,10 @@ function copiarLink(id){const u=location.origin+location.pathname+'?prof='+encod
 
 /* ---------- TABELA DE ATENDIMENTO DIÁRIO (professor e secretaria) ---------- */
 const tiposArea=()=>TIPOS_AREA[S.area]||[];
-function buildSit(){SIT={};const ak=akey(S.area);flat.filter(r=>r.ak===ak).forEach(r=>{const k=sKey(r.estudante,r.mat),d=dataReg(r),o=SIT[k]||(SIT[k]={d:null});if(registroTemFrequencia(r)&&(!o.d||d>o.d))o.d=d})}
-function sitDe(n,m){
+function buildSit(){SIT={};const ak=akey(S.area);flat.filter(r=>r.ak===ak).forEach(r=>{const k=sKey(r.estudante,r.mat,r.nivel),d=dataReg(r),o=SIT[k]||(SIT[k]={d:null});if(registroTemFrequencia(r)&&(!o.d||d>o.d))o.d=d})}
+function sitDe(n,m,nivel){
   if(!(n||'').trim()) return '';
-  const k=sKey(n,m),o=SIT[k];
+  const k=sKey(n,m,nivel),o=SIT[k];
   if(!o||!o.d) return '⚪ Sem frequência registrada';
   const hoje0=new Date();hoje0.setHours(0,0,0,0);
   const ultima=new Date(o.d);ultima.setHours(0,0,0,0);
@@ -931,9 +936,13 @@ function mountEd(host){
   const areaLivre=livre(S.area);
   const headers=[cabEd('col-ord','ORD.'),cabEd('col-nivel','NÍVEL'),cabEd('col-est','ESTUDANTE'),cabEd('col-data','DATA'),cabEd('col-prof','PROFESSOR')];
   if(areaLivre)headers.push(cabEd('col-free-activity','REGISTRO DE ATIVIDADE'));
-  else headers.push(cabEd('col-componente','COMPONENTE'),cabEd('col-avaliacao','AVALIAÇÃO'),cabEd('col-intervencao','INTERVENÇÃO PEDAGÓGICA'),cabEd('col-vivencia','ATIVIDADE DE VIVÊNCIA'));
+  else{
+    headers.push(cabEd('col-componente','COMPONENTE'),cabEd('col-avaliacao','AVALIAÇÃO'));
+    if(S.area==='LINGUAGENS')headers.push(cabEd('col-redacao','REDAÇÕES'));
+    headers.push(cabEd('col-intervencao','INTERVENÇÃO PEDAGÓGICA'),cabEd('col-vivencia','ATIVIDADE DE VIVÊNCIA'));
+  }
   headers.push(cabEd('col-pres','PRESENÇA'),cabEd('col-acao no-exp','AÇÕES'));
-  host.innerHTML=`<div class="tc ed-scroll-top"><table class="ed ${areaLivre?'ed-free':'ed-standard'}"><thead><tr>${headers.join('')}</tr></thead><tbody class="edb"></tbody></table></div><div class="ed-scroll-bottom" aria-label="Segunda barra de rolagem horizontal"><div class="ed-scroll-fill"></div></div><div class="ed-actions"><button class="btn sm" onclick="maisLinha(this)">➕ Adicionar 1 linha</button><button class="btn sm warn" onclick="retirarLinha(this)">➖ Retirar 1 linha</button><button class="btn sm save" onclick="salvarAlteracoesTela()">💾 Salvar alterações</button><span class="line-status" id="edStatus"></span></div><div class="status-legend"><strong>Orientação:</strong> informe o nome e a matrícula do estudante. Nas áreas regulares, selecione o componente e descreva a avaliação, a intervenção pedagógica e a atividade de vivência. Em LEI e MULTIMEIOS, quantidade e descrição da atividade ficam na mesma célula. Os registros são salvos no Supabase.</div>`;
+  host.innerHTML=`<div class="tc ed-scroll-top"><table class="ed ${areaLivre?'ed-free':'ed-standard'}"><thead><tr>${headers.join('')}</tr></thead><tbody class="edb"></tbody></table></div><div class="ed-scroll-bottom" aria-label="Segunda barra de rolagem horizontal"><div class="ed-scroll-fill"></div></div><div class="ed-actions"><button class="btn sm" onclick="maisLinha(this)">➕ Adicionar 1 linha</button><button class="btn sm warn" onclick="retirarLinha(this)">➖ Retirar 1 linha</button><button class="btn sm save" onclick="salvarAlteracoesTela()">💾 Salvar alterações</button><span class="line-status" id="edStatus"></span></div><div class="status-legend"><strong>Orientação:</strong> informe o nível (Fundamental ou Médio), o nome e a matrícula do estudante. Nas áreas regulares, selecione o componente e registre a avaliação; em Linguagens, informe também a quantidade de redações, além da intervenção pedagógica e da atividade de vivência. Em LEI e MULTIMEIOS, quantidade e descrição da atividade ficam na mesma célula. Os registros são salvos no Supabase.</div>`;
   const tb=host.querySelector('.edb'),rs=ED.rs||[],tot=Math.max(30,S.rows,rs.length);for(let i=0;i<tot;i++)addRow(tb,rs[i]);
   configurarRolagemInferior(host);
 }
@@ -956,6 +965,8 @@ function addRow(tb,r){
   tr.dataset.quantidades=JSON.stringify(qBase);
   tr.dataset.registroAtendimentoLegado=String(r.registroAtendimento||r.registro_atendimento||'');
   const inp=f=>`<input class="ci" data-f="${f}" value="${esc(r[f]||'')}" oninput="marcarDigitacao(this)" onchange="salvarLinhaSeguro(this)" autocomplete="off">`;
+  const nivelAtual=normalizarNivel(r.nivel);
+  const nivelSelect=`<select class="ci" data-f="nivel" onchange="salvarLinhaSeguro(this)" aria-label="Nível de ensino"><option value="">— selecione —</option><option value="Fundamental" ${nivelAtual==='Fundamental'?'selected':''}>Fundamental</option><option value="Médio" ${nivelAtual==='Médio'?'selected':''}>Médio</option></select>`;
   const descricao=(field,value,placeholder)=>`<textarea class="description-input" data-f="${field}" placeholder="${esc(placeholder)}" oninput="marcarDigitacao(this)" onchange="salvarLinhaSeguro(this)">${esc(value||'')}</textarea>`;
   let professor;
   if(S.role==='prof')professor=`<td class="l col-prof">${esc(ED.nome||((professores[S.prof]||{}).nome)||'')}</td>`;
@@ -972,14 +983,15 @@ function addRow(tb,r){
   const compList=r.componente&&!compOptions.includes(r.componente)?[r.componente,...compOptions]:compOptions;
   const component=areaLivre?'':`<td class="col-componente"><select class="ci" data-f="componente" onchange="alterarComponenteLinha(this)"><option value="">— selecione —</option>${compList.map(c=>`<option value="${esc(c)}" ${c===r.componente?'selected':''}>${esc(c)}</option>`).join('')}</select></td>`;
   const numero=(i,label)=>`<input class="ci qty-input" type="number" min="0" step="1" inputmode="numeric" placeholder="Qtd." data-f="q" data-i="${i}" value="${numeroQuantidade(qBase[i])||''}" oninput="marcarDigitacao(this)" onchange="salvarLinhaSeguro(this)" aria-label="${esc(label)}">`;
-  const evaluation=areaLivre?'':`<td class="col-avaliacao"><div class="stack-fields">${numero(0,'Quantidade de avaliações')}${descricao('avaliacao',valorAvaliacaoRealizada(r),'Descrição da avaliação')}</div></td>`;
+  const evaluation=areaLivre?'':`<td class="col-avaliacao"><div class="stack-fields">${numero(0,'Quantidade de avaliações')}${descricao('avaliacao',valorAvaliacaoRealizada(r),S.area==='LINGUAGENS'?'Descrição da avaliação ou redação':'Descrição da avaliação')}</div></td>`;
+  const essay=(!areaLivre&&S.area==='LINGUAGENS')?`<td class="col-redacao">${numero(1,'Quantidade de redações')}</td>`:'';
   const intervention=areaLivre?'':`<td class="col-intervencao"><div class="stack-fields">${numero(2,'Quantidade de intervenções pedagógicas')}${descricao('intervencaoDescricao',r.intervencaoDescricao||r.intervencao_descricao||'','Descrição da intervenção pedagógica')}</div></td>`;
   const vivenciaIndex=indiceVivencia(S.area,r.componente||'',{quantidades:qBase});
   const vivencia=areaLivre?'':`<td class="col-vivencia"><div class="stack-fields"><input class="ci qty-input ${vivenciaIndex===null?'disabled-activity':''}" type="number" min="0" step="1" inputmode="numeric" placeholder="Qtd." data-f="q" data-i="${vivenciaIndex===null?'':vivenciaIndex}" data-vivencia="1" value="${vivenciaIndex===null?'':(numeroQuantidade(qBase[vivenciaIndex])||'')}" ${vivenciaIndex===null?'disabled':''} oninput="marcarDigitacao(this)" onchange="salvarLinhaSeguro(this)" aria-label="Quantidade de Atividades de Vivência">${descricao('atividadeVivenciaDescricao',r.atividadeVivenciaDescricao||r.atividade_vivencia_descricao||'','Descrição da Atividade de Vivência')}</div></td>`;
   const freeDesc=r.registroAtividadeDescricao||r.registro_atividade_descricao||r.forma||r.atendimento||'';
   const freeActivity=areaLivre?`<td class="col-free-activity"><div class="stack-fields"><input class="ci qty-input" type="number" min="0" step="1" inputmode="numeric" placeholder="Quantidade" data-f="atividadeLivreQuantidade" value="${quantidadeLivre(r)||''}" oninput="marcarDigitacao(this)" onchange="salvarLinhaSeguro(this)" aria-label="Quantidade de atividades">${descricao('atividadeLivreDescricao',freeDesc,'Descrição do registro de atividade')}</div></td>`:'';
   const autoFreq=qtdAtend(r)>0||!!valorAvaliacaoRealizada(r)||!!(r.intervencaoDescricao||r.atividadeVivenciaDescricao||freeDesc);
-  const cells=[`<td class="o col-ord">${tb.children.length+1}</td>`,`<td class="col-nivel">${inp('nivel')}</td>`,studentCell,date,professor,component,evaluation,intervention,vivencia,freeActivity,`<td class="col-pres"><input type="checkbox" data-f="freq" ${(r.frequencia||autoFreq)?'checked':''} onchange="salvarLinhaSeguro(this)" aria-label="Presença"></td>`,`<td class="no-exp col-acao"><button class="ib" title="Excluir este atendimento" onclick="delLinha(this)">🗑</button><button class="ib" title="Excluir o aluno deste ano" onclick="excluirAlunoDaLinha(this)">👤</button></td>`];
+  const cells=[`<td class="o col-ord">${tb.children.length+1}</td>`,`<td class="col-nivel">${nivelSelect}</td>`,studentCell,date,professor,component,evaluation,essay,intervention,vivencia,freeActivity,`<td class="col-pres"><input type="checkbox" data-f="freq" ${(r.frequencia||autoFreq)?'checked':''} onchange="salvarLinhaSeguro(this)" aria-label="Presença"></td>`,`<td class="no-exp col-acao"><button class="ib" title="Excluir este atendimento" onclick="delLinha(this)">🗑</button><button class="ib" title="Excluir o aluno deste ano" onclick="excluirAlunoDaLinha(this)">👤</button></td>`];
   tr.innerHTML=cells.filter(Boolean).join('');
   tb.appendChild(tr);
 }
@@ -1010,6 +1022,7 @@ async function salvarLinha(el){
   const tr=el.closest('tr'),g=f=>tr.querySelector(`[data-f="${f}"]`);
   if(!tr||!g('freq'))throw new Error('Linha de atendimento não encontrada. Atualize a página e tente novamente.');
   const nivel=(g('nivel')?.value||'').trim(),mat=(g('mat')?.value||'').trim(),est=(g('estudante')?.value||'').trim();
+  if((est||mat)&&!normalizarNivel(nivel)&&!tr.dataset.key)throw new Error('Selecione o nível do estudante: Fundamental ou Médio.');
   const componente=(g('componente')?.value||'').trim();
   const avaliacaoRealizada=(g('avaliacao')?.value||'').trim();
   const intervencaoDescricao=(g('intervencaoDescricao')?.value||'').trim();
@@ -1078,28 +1091,34 @@ function delLinha(b){
     tr.querySelectorAll('input.ci,textarea.ci,textarea.description-input').forEach(i=>i.value='');
     tr.querySelectorAll('select').forEach(i=>i.value='');tr.querySelectorAll('[data-f="freq"]').forEach(c=>c.checked=false);
   }).catch(e=>alert('Não foi possível excluir a linha: '+e.message))}
-function mesmoAlunoRegistro(r,nome,mat){
-  if(normNome(r&&r.estudante)!==normNome(nome))return false;
-  const alvo=(mat||'').trim();
-  return !alvo||String(r.mat||'').trim()===alvo;
+function mesmoAlunoRegistro(r,nome,mat,nivel){
+  const alvoMat=String(mat||'').trim().toUpperCase();
+  const alvoNivel=normalizarNivel(nivel);
+  if(alvoMat&&String(r&&r.mat||'').trim().toUpperCase()!==alvoMat)return false;
+  if(alvoMat)return alvoNivel?normalizarNivel(r&&r.nivel)===alvoNivel:!normalizarNivel(r&&r.nivel);
+  if(alvoNivel&&normalizarNivel(r&&r.nivel)!==alvoNivel)return false;
+  return normNome(r&&r.estudante)===normNome(nome);
 }
-async function excluirAlunoAtual(nome,mat){
-  nome=(nome||'').trim();mat=(mat||'').trim();
+async function excluirAlunoAtual(nome,mat,nivel=''){
+  nome=(nome||'').trim();mat=(mat||'').trim();nivel=normalizarNivel(nivel);
   if(!nome&&!mat)return;
   const alvo=nome||'aluno';
-  if(!confirm(`Excluir o aluno ${alvo}${mat?` — matrícula ${mat}`:''} de todos os registros do ano ${S.ano}?\n\nTodos os atendimentos deste aluno no ano selecionado serão removidos. Essa ação não pode ser desfeita.`))return;
+  if(!confirm(`Excluir ${alvo}${mat?` — matrícula ${mat}`:''}${nivel?` — nível ${nivel}`:''} de todos os registros do ano ${S.ano}?\n\nTodos os atendimentos deste estudante neste nível e ano serão removidos. Essa ação não pode ser desfeita.`))return;
   const updates={};
   Object.entries(dadosAtend).forEach(([mes,md])=>Object.entries(md||{}).forEach(([dia,dd])=>Object.entries(dd||{}).forEach(([ak,ad])=>Object.entries(ad||{}).forEach(([pid,pd])=>Object.entries(pd||{}).forEach(([k,r])=>{
-    if(mesmoAlunoRegistro(r,nome,mat))updates[`atend/${S.ano}/${mes}/${dia}/${ak}/${pid}/${k}`]=null;
+    if(mesmoAlunoRegistro(r,nome,mat,nivel))updates[`atend/${S.ano}/${mes}/${dia}/${ak}/${pid}/${k}`]=null;
   })))));
   Object.entries(dadosLegacy).forEach(([mes,md])=>Object.entries(md||{}).forEach(([dia,dd])=>Object.entries(dd||{}).forEach(([ak,ad])=>Object.entries(ad||{}).forEach(([k,r])=>{
-    if(mesmoAlunoRegistro(r,nome,mat))updates[`frequencias/${S.ano}/${mes}/${dia}/${ak}/${k}`]=null;
+    if(mesmoAlunoRegistro(r,nome,mat,nivel))updates[`frequencias/${S.ano}/${mes}/${dia}/${ak}/${k}`]=null;
   }))));
   const sit=await db.ref(`situacaoAlunos/${S.ano}`).once('value');
   Object.entries(sit.val()||{}).forEach(([ak,areaData])=>Object.keys(areaData||{}).forEach(k=>{
     const parts=k.split('___');
-    const kn=parts[0]||'',km=parts.slice(1).join('___');
-    if(normNome(kn)===normNome(nome)&&( !mat || km===mat.toUpperCase() || km==='SEM_MAT'))updates[`situacaoAlunos/${S.ano}/${ak}/${k}`]=null;
+    const primeira=parts[0]||'',segunda=parts[1]||'';
+    const chaveNova=!!mat&&primeira===mat.toUpperCase()&&(!nivel||segunda===nivelChave(nivel));
+    const nivelCompativel=!nivel?(parts.length<3||segunda==='SEM_MAT'):parts.length>=3&&parts[2]===nivelChave(nivel);
+    const chaveAntiga=normNome(primeira)===normNome(nome)&&(!mat||segunda===mat.toUpperCase()||segunda==='SEM_MAT')&&nivelCompativel;
+    if(chaveNova||chaveAntiga)updates[`situacaoAlunos/${S.ano}/${ak}/${k}`]=null;
   }));
   if(Object.keys(updates).length){
     await db.ref().update(updates);
@@ -1109,12 +1128,13 @@ async function excluirAlunoAtual(nome,mat){
   }
   alert(`Aluno ${alvo} excluído dos registros do ano ${S.ano}.`);
 }
-function excluirAlunoBotao(b){const nome=b.dataset.nome||'',mat=b.dataset.mat||'';excluirAlunoAtual(nome,mat)}
+function excluirAlunoBotao(b){const nome=b.dataset.nome||'',mat=b.dataset.mat||'',nivel=b.dataset.nivel||'';excluirAlunoAtual(nome,mat,nivel)}
 function excluirAlunoDaLinha(b){
   const tr=b.closest('tr');if(!tr)return;
   const nome=(tr.querySelector('[data-f="estudante"]')||{}).value||'';
   const mat=(tr.querySelector('[data-f="mat"]')||{}).value||'';
-  excluirAlunoAtual(nome,mat);
+  const nivel=(tr.querySelector('[data-f="nivel"]')||{}).value||'';
+  excluirAlunoAtual(nome,mat,nivel);
 }
 
 function valorAvaliacaoRealizada(r){return String(r.avaliacaoRealizada||r.avaliacao||r.avaliacao_realizada||'').trim()}
@@ -1150,30 +1170,30 @@ function atualizarRegistrosEstudantes(force=false){
     });
 }
 function abrirRegistrosEstudantes(){
-  navegarApp(()=>{if(S.role==='sec')S.modo='ESTUDANTES';S.registroView='areas';S.registroArea='';S.registroAlunoNome='';S.registroAlunoMat='';S.registroAnoConclusao='';});
+  navegarApp(()=>{if(S.role==='sec')S.modo='ESTUDANTES';S.registroView='areas';S.registroArea='';S.registroAlunoNome='';S.registroAlunoMat='';S.registroAlunoNivel='';S.registroAnoConclusao='';});
   atualizarRegistrosEstudantes(true);
 }
 function fecharRegistrosEstudantes(){
-  navegarApp(()=>{S.registroView='';S.registroArea='';S.registroAlunoNome='';S.registroAlunoMat='';S.registroAnoConclusao='';if(S.role==='sec'){S.modo='DIARIO';S.sub='menu'}});
+  navegarApp(()=>{S.registroView='';S.registroArea='';S.registroAlunoNome='';S.registroAlunoMat='';S.registroAlunoNivel='';S.registroAnoConclusao='';if(S.role==='sec'){S.modo='DIARIO';S.sub='menu'}});
 }
 function escolherAreaRegistro(area){
-  navegarApp(()=>{S.registroView='alunos';S.registroArea=area;S.registroAlunoNome='';S.registroAlunoMat='';S.registroAnoConclusao='';});
+  navegarApp(()=>{S.registroView='alunos';S.registroArea=area;S.registroAlunoNome='';S.registroAlunoMat='';S.registroAlunoNivel='';S.registroAnoConclusao='';});
 }
-function escolherAlunoRegistro(nome,mat){
-  navegarApp(()=>{S.registroView='detalhe';S.registroAlunoNome=nome;S.registroAlunoMat=mat;});
+function escolherAlunoRegistro(nome,mat,nivel=''){
+  navegarApp(()=>{S.registroView='detalhe';S.registroAlunoNome=nome;S.registroAlunoMat=mat;S.registroAlunoNivel=normalizarNivel(nivel);});
 }
 function abrirConcluintesPorAno(){
-  navegarApp(()=>{S.registroView='concluintes';S.registroAnoConclusao='';S.registroAlunoNome='';S.registroAlunoMat='';});
+  navegarApp(()=>{S.registroView='concluintes';S.registroAnoConclusao='';S.registroAlunoNome='';S.registroAlunoMat='';S.registroAlunoNivel='';});
 }
 function escolherAnoConclusao(ano){
-  navegarApp(()=>{S.registroView='concluintes-alunos';S.registroAnoConclusao=String(ano);S.registroAlunoNome='';S.registroAlunoMat='';});
+  navegarApp(()=>{S.registroView='concluintes-alunos';S.registroAnoConclusao=String(ano);S.registroAlunoNome='';S.registroAlunoMat='';S.registroAlunoNivel='';});
 }
-function escolherConcluinte(nome,mat){
-  const c=conclusaoDoAluno(nome,mat);
-  navegarApp(()=>{S.registroView='concluinte-detalhe';S.registroAlunoNome=nome;S.registroAlunoMat=mat;S.registroArea=c?c.area:(S.registroArea||'');});
+function escolherConcluinte(nome,mat,nivel=''){
+  const c=conclusaoDoAluno(nome,mat,nivel);
+  navegarApp(()=>{S.registroView='concluinte-detalhe';S.registroAlunoNome=nome;S.registroAlunoMat=mat;S.registroAlunoNivel=normalizarNivel(nivel);S.registroArea=c?c.area:(S.registroArea||'');});
 }
 function voltarRegistroEstudantes(view){
-  navegarApp(()=>{S.registroView=view;if(view==='areas'){S.registroArea='';S.registroAlunoNome='';S.registroAlunoMat='';S.registroAnoConclusao=''}else if(view==='alunos'){S.registroAlunoNome='';S.registroAlunoMat=''}else if(view==='concluintes'){S.registroAnoConclusao='';S.registroAlunoNome='';S.registroAlunoMat=''}else if(view==='concluintes-alunos'){S.registroAlunoNome='';S.registroAlunoMat=''}});
+  navegarApp(()=>{S.registroView=view;if(view==='areas'){S.registroArea='';S.registroAlunoNome='';S.registroAlunoMat='';S.registroAlunoNivel='';S.registroAnoConclusao=''}else if(view==='alunos'){S.registroAlunoNome='';S.registroAlunoMat='';S.registroAlunoNivel=''}else if(view==='concluintes'){S.registroAnoConclusao='';S.registroAlunoNome='';S.registroAlunoMat='';S.registroAlunoNivel=''}else if(view==='concluintes-alunos'){S.registroAlunoNome='';S.registroAlunoMat='';S.registroAlunoNivel=''}});
 }
 function nomeAreaRegistro(area){
   if(area==='LINGUAGENS')return 'LINGUAGENS';
@@ -1188,42 +1208,83 @@ function areaKeyRegistro(area){
   if(['LINGUAGENS','CIÊNCIAS HUMANAS','LEI','MULTIMEIOS'].includes(area))return akey(area);
   return akey('CIÊNCIAS DA NATUREZA E MATEMÁTICA');
 }
-function registroPertenceAreaEstudante(r,area){
-  // LEI e MULTIMEIOS sao categorias de origem do atendimento; mantem seus
-  // registros consultaveis sem alterar a classificacao principal do estudante.
-  if(area==='LEI'||area==='MULTIMEIOS')return r.area_key===areaKeyRegistro(area);
-  // A area gravada na classificacao atual do estudante prevalece sobre a area
-  // original do atendimento. Assim, mudar a area move o estudante entre listas.
-  const areaAtual=String(r.student_area||'').trim();
-  if(areaAtual)return areaAtual===area;
-  if(r.area_key!==areaKeyRegistro(area))return false;
-  if(area==='LINGUAGENS'||area==='CIÊNCIAS HUMANAS')return true;
-  const q=r.quantidades||{};
-  const praticaMatematica=numeroQuantidade(q[5])>0;
-  const praticaNatureza=numeroQuantidade(q[4])>0;
-  const componente=normNome(r.component||r.componente||'');
-  if(praticaMatematica||praticaNatureza){
-    return area==='MATEMÁTICA'?praticaMatematica:praticaNatureza;
+function nivelRegistro(r){
+  const direto=normalizarNivel(r&&(r.nivel||r.level||r.student_level));
+  if(direto)return direto;
+  // Algumas versões da RPC não devolvem o nível; recupera-o pelo identificador
+  // do atendimento lido em tempo real, sem misturar matrícula ou professor.
+  if(r&&r.record_id){
+    const achado=flat.find(x=>String(x.key||'')===String(r.record_id)&&String(x.ak||'')===String(r.area_key||'')&&(!r.prof_id||String(x.pid||'')===String(r.prof_id))&&String(x.mat||'').trim().toUpperCase()===String(r.mat||'').trim().toUpperCase());
+    if(achado)return normalizarNivel(achado.nivel);
   }
-  if(area==='MATEMÁTICA')return /MATEM|ALGEBRA|GEOMETRIA/.test(componente);
-  return /NATUREZA|BIOLOG|QUIM|FISIC/.test(componente) ||
-    (numeroQuantidade(q[4])===0&&numeroQuantidade(q[5])===0&&!componente);
+  const mat=String(r&&r.mat||'').trim().toUpperCase(),nome=normNome(r&&r.student);
+  if(mat){
+    const niveis=[...new Set(flat.filter(x=>String(x.mat||'').trim().toUpperCase()===mat&&(!nome||normNome(x.estudante)===nome)).map(x=>normalizarNivel(x.nivel)).filter(Boolean))];
+    if(niveis.length===1)return niveis[0];
+  }
+  return '';
+}
+function chaveAlunoRegistro(r){
+  const mat=String(r&&r.mat||'').trim().toUpperCase(),nivel=nivelChave(nivelRegistro(r));
+  return mat?`${mat}___${nivel}`:`${normNome(r&&r.student)||'SEM_NOME'}___SEM_MAT___${nivel}`;
+}
+function componenteParaAreaRegistro(r){
+  const c=normNome(r&& (r.component||r.componente||''));
+  if(!c)return '';
+  if(/ARTE|EDUCACAO FISICA|ESPANHOL|INGLES|REDACAO|PORTUGUES|LINGUAGENS/.test(c))return 'LINGUAGENS';
+  if(/FILOSOFIA|GEOGRAFIA|HISTORIA|SOCIOLOGIA|CIENCIAS HUMANAS/.test(c))return 'CIÊNCIAS HUMANAS';
+  if(/MATEM|ALGEBRA|GEOMETRIA/.test(c))return 'MATEMÁTICA';
+  if(/NATUREZA|BIOLOG|QUIM|FISIC|CIENCIAS/.test(c))return 'CIÊNCIAS DA NATUREZA';
+  return '';
+}
+function registroPertenceAreaEstudante(r,area){
+  return areaSugeridaRegistro(r)===area;
 }
 function areaSugeridaRegistro(r){
-  if(['LINGUAGENS','MATEMÁTICA','CIÊNCIAS DA NATUREZA','CIÊNCIAS HUMANAS'].includes(r.student_area))return r.student_area;
+  // O componente curricular do atendimento define a área daquela avaliação.
+  // Isso impede que uma área antiga (student_area) mantenha o aluno duplicado.
+  const componente=componenteParaAreaRegistro(r);
+  if(componente)return componente;
   if(r.area_key===akey('LINGUAGENS'))return 'LINGUAGENS';
   if(r.area_key===akey('CIÊNCIAS HUMANAS'))return 'CIÊNCIAS HUMANAS';
-  if(r.area_key===akey('LEI'))return 'LEI';
-  if(r.area_key===akey('MULTIMEIOS'))return 'MULTIMEIOS';
-  const q=r.quantidades||{},componente=normNome(r.component||r.componente||'');
-  if(numeroQuantidade(q[5])>0||/MATEM|ALGEBRA|GEOMETRIA/.test(componente))return 'MATEMÁTICA';
-  if(numeroQuantidade(q[4])>0||/NATUREZA|BIOLOG|QUIM|FISIC/.test(componente))return 'CIÊNCIAS DA NATUREZA';
-  return S.registroArea||'MATEMÁTICA';
+  if(r.area_key===akey('LEI')||r.area_key===akey('MULTIMEIOS'))return '';
+  const q=r.quantidades||{};
+  if(numeroQuantidade(q[5])>0)return 'MATEMÁTICA';
+  if(numeroQuantidade(q[4])>0)return 'CIÊNCIAS DA NATUREZA';
+  const areaAnterior=String(r.student_area||'').trim();
+  if(['LINGUAGENS','MATEMÁTICA','CIÊNCIAS DA NATUREZA','CIÊNCIAS HUMANAS'].includes(areaAnterior))return areaAnterior;
+  return '';
 }
-function chaveAlunoRegistro(r){return normNome(r.student)+'___'+String(r.mat||'').trim().toUpperCase()}
+function registroApareceNoMenu(area,r){
+  if(!r||r.area_key===akey('LEI')||r.area_key===akey('MULTIMEIOS'))return false;
+  const q=r.quantidades||{};
+  const tipos=(Array.isArray(r.tipos)?r.tipos:Object.values(r.tipos||{})).map(normNome);
+  const avaliacao=!!String(r.evaluation||r.avaliacaoRealizada||r.avaliacao_realizada||'').trim()||numeroQuantidade(q[0])>0||tipos.includes('AVALIACAO');
+  const redacao=!!String(r.essay||r.redacao||r.redaction||'').trim()||numeroQuantidade(q[1])>0||tipos.includes('REDACAO');
+  return avaliacao||redacao;
+}
+function instanteRegistroEstudante(r){
+  const ts=Number(r&& (r.ts||r.timestamp||r.created_at_timestamp)||0);
+  if(Number.isFinite(ts)&&ts>0)return ts;
+  if(r&&r.record_id){
+    const local=flat.find(x=>String(x.key||'')===String(r.record_id)&&String(x.ak||'')===String(r.area_key||'')&&(!r.prof_id||String(x.pid||'')===String(r.prof_id)));
+    const localTs=Number(local&&local.ts||0);
+    if(Number.isFinite(localTs)&&localTs>0)return localTs;
+  }
+  const data=dataRegistroEstudante(r).getTime();
+  const hora=String(r&& (r.time||r.created_at||'')).match(/T(\d{2}):(\d{2})(?::(\d{2}))?/);
+  return data+(hora?(Number(hora[1])*3600+Number(hora[2])*60+Number(hora[3]||0))*1000:0);
+}
 function registrosDaAreaEstudante(area){
-  return registrosEstudantes.filter(r=>String(r.student||'').trim()&&!String(r.completion_year||'').trim()&&registroPertenceAreaEstudante(r,area)&&registroApareceNoMenu(area,r));
+  const maisRecentes=new Map();
+  registrosEstudantes.forEach(r=>{
+    if(!String(r.student||'').trim()||String(r.completion_year||'').trim()||!registroApareceNoMenu(area,r))return;
+    const k=chaveAlunoRegistro(r),atual=maisRecentes.get(k);
+    if(!atual||instanteRegistroEstudante(r)>=instanteRegistroEstudante(atual))maisRecentes.set(k,r);
+  });
+  return [...maisRecentes.values()].filter(r=>registroPertenceAreaEstudante(r,area));
 }
+
 function dataRegistroEstudante(r){
   const meses={'JANEIRO':0,'FEVEREIRO':1,'MARÇO':2,'ABRIL':3,'MAIO':4,'JUNHO':5,'JULHO':6,'AGOSTO':7,'SETEMBRO':8,'OUTUBRO':9,'NOVEMBRO':10,'DEZEMBRO':11};
   return new Date(Number(r.year)||Number(S.ano),meses[String(r.month||'').toUpperCase()]??0,Number(r.day)||1);
@@ -1231,19 +1292,22 @@ function dataRegistroEstudante(r){
 function montarListaAlunosRegistro(area){
   const agrupados=new Map();
   registrosDaAreaEstudante(area).forEach(r=>{
-    const nome=String(r.student||'').trim(),mat=String(r.mat||'').trim();
+    const nome=String(r.student||'').trim(),mat=String(r.mat||'').trim(),nivel=nivelRegistro(r);
     if(!nome)return;
-    const k=nome.toUpperCase()+'___'+mat.toUpperCase();
-    const atual=agrupados.get(k)||{nome,matricula:mat,ultima:dataRegistroEstudante(r),quantidade:0};
-    const data=dataRegistroEstudante(r);if(data>=atual.ultima)atual.ultima=data;
+    const k=chaveAlunoRegistro(r);
+    const atual=agrupados.get(k)||{nome,matricula:mat,nivel,ultima:dataRegistroEstudante(r),quantidade:0};
+    const data=dataRegistroEstudante(r);if(data>=atual.ultima){atual.ultima=data;atual.nome=nome;atual.matricula=mat;atual.nivel=nivel;}
     atual.quantidade++;agrupados.set(k,atual);
   });
   return [...agrupados.values()].sort((a,b)=>a.nome.localeCompare(b.nome,'pt-BR'));
 }
 function registrosDoAlunoSelecionado(){
-  const nome=normNome(S.registroAlunoNome),mat=String(S.registroAlunoMat||'').trim().toUpperCase();
-  return registrosEstudantes.filter(r=>String(r.student||'').trim()&&normNome(r.student)===nome&&String(r.mat||'').trim().toUpperCase()===mat&&registroApareceNoMenu(S.registroArea,r))
-    .sort((a,b)=>dataRegistroEstudante(a)-dataRegistroEstudante(b));
+  const nome=normNome(S.registroAlunoNome),mat=String(S.registroAlunoMat||'').trim().toUpperCase(),nivel=normalizarNivel(S.registroAlunoNivel);
+  return registrosEstudantes.filter(r=>{
+    if(!String(r.student||'').trim()||!registroApareceNoMenu('',r))return false;
+    const mesmaIdentidade=mat?String(r.mat||'').trim().toUpperCase()===mat:normNome(r.student)===nome;
+    return mesmaIdentidade&&(!nivel||nivelRegistro(r)===nivel);
+  }).sort((a,b)=>instanteRegistroEstudante(a)-instanteRegistroEstudante(b));
 }
 
 function concluintesPorAno(){
@@ -1260,9 +1324,9 @@ function concluintesDoAno(ano){
   return estudantesConcluidos.filter(c=>String(c.completion_year)===String(ano))
     .sort((a,b)=>String(a.student||'').localeCompare(String(b.student||''),'pt-BR'));
 }
-function conclusaoDoAluno(nome,mat){
-  const n=normNome(nome),m=String(mat||'').trim().toUpperCase();
-  return estudantesConcluidos.find(c=>normNome(c.student)===n&&String(c.mat||'').trim().toUpperCase()===m)||null;
+function conclusaoDoAluno(nome,mat,nivel=''){
+  const n=normNome(nome),m=String(mat||'').trim().toUpperCase(),nv=normalizarNivel(nivel);
+  return estudantesConcluidos.find(c=>normNome(c.student)===n&&String(c.mat||'').trim().toUpperCase()===m&&(!nv||!nivelRegistro(c)||nivelRegistro(c)===nv))||null;
 }
 function dataConclusao(c){
   if(!c||!c.completed_at)return '—';
@@ -1287,7 +1351,7 @@ async function concluirEstudanteRegistro(){
       p_completion_year:anoFinal,p_area:area
     });
     registrosEstudantes.forEach(r=>{
-      if(normNome(r.student)===normNome(S.registroAlunoNome)&&String(r.mat||'').trim().toUpperCase()===String(S.registroAlunoMat||'').trim().toUpperCase()){
+      if(String(r.mat||'').trim().toUpperCase()===String(S.registroAlunoMat||'').trim().toUpperCase()&&(!S.registroAlunoNivel||nivelRegistro(r)===S.registroAlunoNivel)){
         r.completion_year=anoFinal;r.student_area=area;
       }
     });
@@ -1302,7 +1366,7 @@ async function concluirEstudanteRegistro(){
   }
 }
 async function reabrirEstudanteConcluido(){
-  const c=conclusaoDoAluno(S.registroAlunoNome,S.registroAlunoMat);
+  const c=conclusaoDoAluno(S.registroAlunoNome,S.registroAlunoMat,S.registroAlunoNivel);
   const area=(c&&c.area)||S.registroArea||'LINGUAGENS';
   if(!confirm(`Reabrir o acompanhamento de ${S.registroAlunoNome}? O aluno sairá do arquivo de concluintes e voltará à área ${nomeAreaRegistro(area)}.`))return;
   try{
@@ -1310,13 +1374,13 @@ async function reabrirEstudanteConcluido(){
       p_token:AUTH.token,p_student:S.registroAlunoNome,p_mat:S.registroAlunoMat||'',
       p_completion_year:'',p_area:area
     });
-    estudantesConcluidos=estudantesConcluidos.filter(x=>!(normNome(x.student)===normNome(S.registroAlunoNome)&&String(x.mat||'').trim().toUpperCase()===String(S.registroAlunoMat||'').trim().toUpperCase()));
+    estudantesConcluidos=estudantesConcluidos.filter(x=>!(String(x.mat||'').trim().toUpperCase()===String(S.registroAlunoMat||'').trim().toUpperCase()&&(!S.registroAlunoNivel||nivelRegistro(x)===S.registroAlunoNivel)));
     registrosEstudantes.forEach(r=>{
-      if(normNome(r.student)===normNome(S.registroAlunoNome)&&String(r.mat||'').trim().toUpperCase()===String(S.registroAlunoMat||'').trim().toUpperCase())r.completion_year=null;
+      if(String(r.mat||'').trim().toUpperCase()===String(S.registroAlunoMat||'').trim().toUpperCase()&&(!S.registroAlunoNivel||nivelRegistro(r)===S.registroAlunoNivel))r.completion_year=null;
     });
     registrosEstudantesAssinatura='';
     await atualizarRegistrosEstudantes(true);
-    navegarApp(()=>{S.registroView='alunos';S.registroArea=area;S.registroAnoConclusao='';S.registroAlunoNome='';S.registroAlunoMat='';});
+    navegarApp(()=>{S.registroView='alunos';S.registroArea=area;S.registroAnoConclusao='';S.registroAlunoNome='';S.registroAlunoMat='';S.registroAlunoNivel='';});
     alert('Acompanhamento reaberto. O estudante voltou para a lista da sua área.');
   }catch(e){
     console.error('Falha ao reabrir estudante:',e);
@@ -1380,37 +1444,30 @@ function botaoExcluirRegistroHTML(r){
   if(!r.record_id||!r.prof_id)return '<span class="history-empty">Registro antigo</span>';
   return `<button class="registry-delete" type="button" title="Excluir este registro" data-year="${esc(r.year)}" data-month="${esc(r.month)}" data-day="${esc(r.day)}" data-area-key="${esc(r.area_key)}" data-prof-id="${esc(r.prof_id)}" data-record-id="${esc(r.record_id)}" data-student="${esc(r.student)}" data-mat="${esc(r.mat||'')}" onclick="excluirRegistroEstudante(this)">🗑</button>`;
 }
-function registroApareceNoMenu(area,r){
-  const q=r.quantidades||{};
-  if(area==='LEI'||area==='MULTIMEIOS'){
-    return !!String(r.free_activity_description||r.service_record||'').trim()||numeroQuantidade(r.free_activity_quantity)>0;
-  }
-  const tipos=(Array.isArray(r.tipos)?r.tipos:[]).map(normNome);
-  return !!String(r.evaluation||'').trim()||numeroQuantidade(q[0])>0||tipos.some(t=>t==='AVALIACAO');
-}
 function textoAvaliacaoRegistro(r,area){
-  if(area==='LEI'||area==='MULTIMEIOS'){
-    const quantidade=numeroQuantidade(r.free_activity_quantity);
-    const descricao=String(r.free_activity_description||r.service_record||'').trim();
-    return [quantidade>0?`Quantidade: ${quantidade}`:'',descricao].filter(Boolean).join(' — ')||'—';
-  }
-  const quantidade=numeroQuantidade((r.quantidades||{})[0]);
-  const descricao=String(r.evaluation||'').trim();
-  const temTipo=Array.isArray(r.tipos)&&r.tipos.map(normNome).includes('AVALIACAO');
-  return [quantidade>0?`Quantidade: ${quantidade}`:'',descricao|| (temTipo?'Avaliação registrada':'')].filter(Boolean).join(' — ')||'—';
+  const q=r.quantidades||{},tipos=(Array.isArray(r.tipos)?r.tipos:Object.values(r.tipos||{})).map(normNome);
+  const qtdAval=numeroQuantidade(q[0]),qtdRed=numeroQuantidade(q[1]);
+  const descricao=String(r.evaluation||r.avaliacaoRealizada||r.avaliacao_realizada||'').trim();
+  const descricaoRedacao=String(r.essay||r.redacao||r.redaction||'').trim();
+  const partes=[];
+  if(qtdAval)partes.push(`Avaliações: ${qtdAval}`);
+  else if(tipos.includes('AVALIACAO'))partes.push('Avaliação registrada');
+  if(qtdRed)partes.push(`Redações: ${qtdRed}`);
+  else if(tipos.includes('REDACAO'))partes.push('Redação registrada');
+  if(descricao)partes.push(descricao);
+  if(descricaoRedacao)partes.push(`Redação: ${descricaoRedacao}`);
+  return partes.join(' — ')||'—';
 }
 function areaVisivelRegistro(r,areaFallback){
-  if(r.area_key===akey('LEI'))return 'LEI';
-  if(r.area_key===akey('MULTIMEIOS'))return 'MULTIMEIOS';
-  return r.student_area||areaSugeridaRegistro(r)||areaFallback||'';
+  return areaSugeridaRegistro(r)||areaFallback||'';
 }
 function renderRegistrosEstudantes(){
   const comum=registrosEstudantesErro
     ? `<div class="status-legend"><strong>Configuração do Supabase necessária:</strong> execute o arquivo SQL <code>atualizacao_supabase_registros_estudantes.sql</code> no SQL Editor do projeto. Detalhe: ${esc(registrosEstudantesErro)}</div>`
     : `<div class="registry-live">● Atualização automática: os dados acompanham os atendimentos diários salvos pelos professores.</div>`;
   if(S.registroView==='areas'){
-    const areas=['LINGUAGENS','MATEMÁTICA','CIÊNCIAS DA NATUREZA','CIÊNCIAS HUMANAS','LEI','MULTIMEIOS'];
-    return `<div class="areaTag">REGISTROS DOS ESTUDANTES — ${S.ano}</div>${comum}<div class="registry-nav">${areas.map(a=>`<button class="registry-card" onclick="escolherAreaRegistro('${a}')">${a}<small>${a==='LEI'||a==='MULTIMEIOS'?'Consultar registros de atividade desta área':'Consultar estudantes e avaliações atuais'}</small></button>`).join('')}</div><div class="registry-nav"><button class="registry-card registry-completion-card" onclick="abrirConcluintesPorAno()">CONCLUINTES POR ANO<small>Consultar estudantes que tiveram a conclusão registrada</small></button></div>`;
+    const areas=['LINGUAGENS','MATEMÁTICA','CIÊNCIAS DA NATUREZA','CIÊNCIAS HUMANAS'];
+    return `<div class="areaTag">REGISTROS DOS ESTUDANTES — ${S.ano}</div>${comum}<div class="registry-nav">${areas.map(a=>`<button class="registry-card" onclick="escolherAreaRegistro('${a}')">${a}<small>Consultar estudantes, avaliações e redações</small></button>`).join('')}</div><div class="registry-nav"><button class="registry-card registry-completion-card" onclick="abrirConcluintesPorAno()">CONCLUINTES POR ANO<small>Consultar estudantes que tiveram a conclusão registrada</small></button></div>`;
   }
   if(S.registroView==='concluintes'){
     const grupos=concluintesPorAno();
@@ -1418,30 +1475,25 @@ function renderRegistrosEstudantes(){
   }
   if(S.registroView==='concluintes-alunos'){
     const ano=S.registroAnoConclusao,lista=concluintesDoAno(ano);
-    return `<button class="btn sm alt registry-back" onclick="voltarRegistroEstudantes('concluintes')">← Voltar aos anos</button><div class="areaTag">CONCLUINTES — ${esc(ano)}</div>${comum}<div class="sum"><div class="t">Estudantes que concluíram em ${esc(ano)}</div><div class="d"><span>Total: <strong>${lista.length}</strong></span></div></div><div class="registry-list">${lista.map(c=>`<button class="registry-student" data-registry-name="${esc(c.student)}" data-registry-mat="${esc(c.mat||'')}" onclick="escolherConcluinte(this.dataset.registryName,this.dataset.registryMat)"><strong>${esc(c.student)}</strong><span>Matrícula: ${esc(c.mat||'Não informada')} · Área: ${esc(nomeAreaRegistro(c.area))} · Conclusão: ${dataConclusao(c)}</span></button>`).join('')||'<div class="nd">Nenhum concluinte encontrado neste ano.</div>'}</div>`;
+    return `<button class="btn sm alt registry-back" onclick="voltarRegistroEstudantes('concluintes')">← Voltar aos anos</button><div class="areaTag">CONCLUINTES — ${esc(ano)}</div>${comum}<div class="sum"><div class="t">Estudantes que concluíram em ${esc(ano)}</div><div class="d"><span>Total: <strong>${lista.length}</strong></span></div></div><div class="registry-list">${lista.map(c=>`<button class="registry-student" data-registry-name="${esc(c.student)}" data-registry-mat="${esc(c.mat||'')}" data-registry-level="${esc(nivelRegistro(c))}" onclick="escolherConcluinte(this.dataset.registryName,this.dataset.registryMat,this.dataset.registryLevel)"><strong>${esc(c.student)}</strong><span>Matrícula: ${esc(c.mat||'Não informada')} · Nível: ${esc(nivelRegistro(c)||'Não informado')} · Área: ${esc(nomeAreaRegistro(c.area))} · Conclusão: ${dataConclusao(c)}</span></button>`).join('')||'<div class="nd">Nenhum concluinte encontrado neste ano.</div>'}</div>`;
   }
   if(S.registroView==='concluinte-detalhe'){
-    const c=conclusaoDoAluno(S.registroAlunoNome,S.registroAlunoMat);
+    const c=conclusaoDoAluno(S.registroAlunoNome,S.registroAlunoMat,S.registroAlunoNivel);
     const area=(c&&c.area)||S.registroArea;
     const reg=registrosDoAlunoSelecionado();
-    return `<button class="btn sm alt registry-back" onclick="voltarRegistroEstudantes('concluintes-alunos')">← Voltar aos concluintes</button><div class="areaTag">REGISTRO DO CONCLUINTE</div>${comum}<div class="sum"><div class="t">${esc(S.registroAlunoNome)}</div><div class="d"><span>Matrícula: <strong>${esc(S.registroAlunoMat||'Não informada')}</strong></span><span>Área: <strong>${esc(nomeAreaRegistro(area))}</strong></span><span>Ano de conclusão: <strong>${esc(c?c.completion_year:S.registroAnoConclusao)}</strong></span><span>Registrada em: <strong>${dataConclusao(c)}</strong></span></div></div><div class="registry-live">Os atendimentos anteriores permanecem preservados no histórico do sistema.</div><button class="btn sm warn" onclick="reabrirEstudanteConcluido()">↩ Reabrir acompanhamento</button>${reg.length?`<div class="sec-t">Registros de atendimento disponíveis no ano ${S.ano}</div><div class="tc registry-detail"><table><thead><tr><th>DATA</th><th>ÁREA</th><th>COMPONENTE</th><th>AVALIAÇÃO REALIZADA</th><th>PROFESSOR</th><th>EXCLUIR</th></tr></thead><tbody>${reg.map(r=>`<tr><td>${fmt(dataRegistroEstudante(r))}</td><td>${esc(areaVisivelRegistro(r,area))}</td><td>${esc(r.component||'—')}</td><td>${esc(textoAvaliacaoRegistro(r,areaVisivelRegistro(r,area)))}</td><td>${esc(r.teacher||'—')}</td><td>${botaoExcluirRegistroHTML(r)}</td></tr>`).join('')}</tbody></table></div>`:''}`;
+    return `<button class="btn sm alt registry-back" onclick="voltarRegistroEstudantes('concluintes-alunos')">← Voltar aos concluintes</button><div class="areaTag">REGISTRO DO CONCLUINTE</div>${comum}<div class="sum"><div class="t">${esc(S.registroAlunoNome)}</div><div class="d"><span>Matrícula: <strong>${esc(S.registroAlunoMat||'Não informada')}</strong></span><span>Nível: <strong>${esc(S.registroAlunoNivel||'Não informado')}</strong></span><span>Área: <strong>${esc(nomeAreaRegistro(area))}</strong></span><span>Ano de conclusão: <strong>${esc(c?c.completion_year:S.registroAnoConclusao)}</strong></span><span>Registrada em: <strong>${dataConclusao(c)}</strong></span></div></div><div class="registry-live">Os atendimentos anteriores permanecem preservados no histórico do sistema.</div><button class="btn sm warn" onclick="reabrirEstudanteConcluido()">↩ Reabrir acompanhamento</button>${reg.length?`<div class="sec-t">Registros de atendimento disponíveis no ano ${S.ano}</div><div class="tc registry-detail"><table><thead><tr><th>DATA</th><th>NÍVEL</th><th>ÁREA</th><th>COMPONENTE</th><th>AVALIAÇÃO / REDAÇÃO</th><th>PROFESSOR</th><th>EXCLUIR</th></tr></thead><tbody>${reg.map(r=>`<tr><td>${fmt(dataRegistroEstudante(r))}</td><td>${esc(nivelRegistro(r)||S.registroAlunoNivel||'—')}</td><td>${esc(nomeAreaRegistro(areaVisivelRegistro(r,area)))}</td><td>${esc(r.component||r.componente||'—')}</td><td>${esc(textoAvaliacaoRegistro(r,areaVisivelRegistro(r,area)))}</td><td>${esc(r.teacher||r.professor||'—')}</td><td>${botaoExcluirRegistroHTML(r)}</td></tr>`).join('')}</tbody></table></div>`:''}`;
   }
   if(S.registroView==='alunos'){
     const area=S.registroArea,lista=montarListaAlunosRegistro(area);
-    return `<button class="btn sm alt registry-back" onclick="voltarRegistroEstudantes('areas')">← Voltar às áreas</button><div class="areaTag">${esc(nomeAreaRegistro(area))} — ESTUDANTES</div>${comum}<div class="sum"><div class="t">${area==='LEI'||area==='MULTIMEIOS'?'Estudantes com registros de atividade':'Estudantes com avaliações registradas'} — ${S.ano}</div><div class="d"><span>Total: <strong>${lista.length}</strong></span></div></div><div class="registry-list">${lista.map(a=>`<button class="registry-student" data-registry-name="${esc(a.nome)}" data-registry-mat="${esc(a.matricula)}" onclick="escolherAlunoRegistro(this.dataset.registryName,this.dataset.registryMat)"><strong>${esc(a.nome)}</strong><span>Matrícula: ${esc(a.matricula||'Não informada')} · Último registro: ${fmt(a.ultima)}</span></button>`).join('')||'<div class="nd">Nenhum estudante encontrado nesta área para o ano selecionado.</div>'}</div>`;
+    return `<button class="btn sm alt registry-back" onclick="voltarRegistroEstudantes('areas')">← Voltar às áreas</button><div class="areaTag">${esc(nomeAreaRegistro(area))} — ESTUDANTES</div>${comum}<div class="sum"><div class="t">Estudantes com avaliações e redações registradas — ${S.ano}</div><div class="d"><span>Total: <strong>${lista.length}</strong></span></div></div><div class="registry-list">${lista.map(a=>`<button class="registry-student" data-registry-name="${esc(a.nome)}" data-registry-mat="${esc(a.matricula)}" data-registry-level="${esc(a.nivel||'')}" onclick="escolherAlunoRegistro(this.dataset.registryName,this.dataset.registryMat,this.dataset.registryLevel)"><strong>${esc(a.nome)}</strong><span>Matrícula: ${esc(a.matricula||'Não informada')} · Nível: ${esc(a.nivel||'Não informado')} · Última avaliação: ${fmt(a.ultima)}</span></button>`).join('')||'<div class="nd">Nenhum estudante encontrado nesta área para o ano selecionado.</div>'}</div>`;
   }
   const registros=registrosDoAlunoSelecionado();
-  const opcoesArea=['LINGUAGENS','MATEMÁTICA','CIÊNCIAS DA NATUREZA','CIÊNCIAS HUMANAS'];
   const linhas=registros.map(r=>{
     const area=areaVisivelRegistro(r,S.registroArea);
-    const areaEspecial=['LEI','MULTIMEIOS'].includes(area);
-    const seletor=areaEspecial
-      ? `<span class="registry-area-fixed">${esc(nomeAreaRegistro(area))}</span>`
-      : `<select class="registry-area-select" aria-label="Área atual do estudante" onchange="alterarAreaRegistroEstudante(this)">${opcoesArea.map(a=>`<option value="${a}" ${a===area?'selected':''}>${esc(nomeAreaRegistro(a))}</option>`).join('')}</select>`;
     const excluir=botaoExcluirRegistroHTML(r);
-    return `<tr><td>${fmt(dataRegistroEstudante(r))}</td><td>${seletor}</td><td>${esc(r.component||'—')}</td><td>${esc(textoAvaliacaoRegistro(r,areaVisivelRegistro(r,area)))}</td><td>${esc(r.teacher||'—')}</td><td>${excluir}</td></tr>`;
+    return `<tr><td>${fmt(dataRegistroEstudante(r))}</td><td>${esc(nivelRegistro(r)||S.registroAlunoNivel||'—')}</td><td>${esc(nomeAreaRegistro(area))}</td><td>${esc(r.component||r.componente||'—')}</td><td>${esc(textoAvaliacaoRegistro(r,area))}</td><td>${esc(r.teacher||r.professor||'—')}</td><td>${excluir}</td></tr>`;
   }).join('');
-  return `<button class="btn sm alt registry-back" onclick="voltarRegistroEstudantes('alunos')">← Voltar aos estudantes</button><div class="areaTag">REGISTRO DO ESTUDANTE</div>${comum}<div class="sum"><div class="t">${esc(S.registroAlunoNome)}</div><div class="d"><span>Matrícula: <strong>${esc(S.registroAlunoMat||'Não informada')}</strong></span><span>Área atual: <strong>${esc(nomeAreaRegistro(S.registroArea))}</strong></span></div></div><div id="registroAreaStatus" class="registry-live">Altere a coluna ÁREA para transferir o estudante para outra área. A mudança será aplicada em todos os registros dele.</div>${['LEI','MULTIMEIOS'].includes(S.registroArea)?'':'<button class="btn sm warn registry-conclude" onclick="concluirEstudanteRegistro()">✓ CONCLUSÃO</button>'}<span id="conclusaoStatus" class="registry-live"></span><div class="tc registry-detail"><table><thead><tr><th>DATA</th><th>ÁREA</th><th>COMPONENTE</th><th>${['LEI','MULTIMEIOS'].includes(S.registroArea)?'REGISTRO DE ATIVIDADE':'AVALIAÇÃO REALIZADA'}</th><th>PROFESSOR</th><th>EXCLUIR</th></tr></thead><tbody>${linhas||'<tr><td colspan="6" class="nd">Nenhum registro disponível para este estudante.</td></tr>'}</tbody></table></div>`;
+  return `<button class="btn sm alt registry-back" onclick="voltarRegistroEstudantes('alunos')">← Voltar aos estudantes</button><div class="areaTag">REGISTRO DO ESTUDANTE</div>${comum}<div class="sum"><div class="t">${esc(S.registroAlunoNome)}</div><div class="d"><span>Matrícula: <strong>${esc(S.registroAlunoMat||'Não informada')}</strong></span><span>Nível: <strong>${esc(S.registroAlunoNivel||'Não informado')}</strong></span><span>Área atual: <strong>${esc(nomeAreaRegistro(S.registroArea))}</strong></span></div></div><div id="registroAreaStatus" class="registry-live">A área é definida automaticamente pelo componente da avaliação mais recente. O histórico individual reúne as avaliações e redações registradas por todos os professores, inclusive de outras áreas.</div><button class="btn sm warn registry-conclude" onclick="concluirEstudanteRegistro()">✓ CONCLUSÃO</button><span id="conclusaoStatus" class="registry-live"></span><div class="tc registry-detail"><table><thead><tr><th>DATA</th><th>NÍVEL</th><th>ÁREA</th><th>COMPONENTE</th><th>AVALIAÇÃO / REDAÇÃO</th><th>PROFESSOR</th><th>EXCLUIR</th></tr></thead><tbody>${linhas||'<tr><td colspan="7" class="nd">Nenhuma avaliação ou redação disponível para este estudante.</td></tr>'}</tbody></table></div>`;
 }
 function renderProf(){
   const p=professores[S.prof];if(!p)return;
