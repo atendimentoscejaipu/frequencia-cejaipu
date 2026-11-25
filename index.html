@@ -838,7 +838,8 @@ function secMensal(ak){
 /* PROFESSORES (cadastro + ambientes compartilhados) */
 function gerarSenhaTemporaria(){return String(Math.floor(100000+Math.random()*900000))}
 function secProfessores(){
-  let h=`<div class="filters"><div class="row"><b>Novo(a)</b><input id="npNome" class="inp" style="max-width:340px" placeholder="Nome completo do professor(a)"><select id="npArea" class="inp" style="max-width:300px">${AREAS.map(a=>`<option>${a}</option>`).join('')}</select><button class="btn sm" onclick="cadastrarProf()">Cadastrar</button></div><p class="hint">A Secretaria pode adicionar, retirar e mudar professores de área a qualquer hora. Novos professores recebem uma senha temporária de 6 dígitos.</p></div>`;
+  const anosRelatorio=Array.from({length:24},(_,i)=>2026+i);
+  let h=`<div class="filters"><div class="sec-t">EXPORTAÇÃO ANUAL DE ATENDIMENTOS POR PROFESSOR(A)</div><div class="row"><label for="relatorioProfAnual" style="font-weight:bold;font-size:.8rem">Professor(a)</label><select id="relatorioProfAnual" class="inp" style="max-width:340px"><option value="">— selecione o professor(a) —</option>${Object.entries(professores).sort((a,b)=>(a[1].nome||'').localeCompare(b[1].nome||'')).map(([i,p])=>`<option value="${esc(i)}">${esc(p.nome)} — ${esc(p.area||'')}</option>`).join('')}</select><label for="relatorioAnoAnual" style="font-weight:bold;font-size:.8rem">Ano</label><select id="relatorioAnoAnual" class="inp" style="max-width:125px">${anosRelatorio.map(a=>`<option value="${a}" ${String(a)===S.ano?'selected':''}>${a}</option>`).join('')}</select><button class="btn sm" onclick="exportarAtendimentosAnuaisProfessor()">📄 Exportar PDF anual</button></div><p class="hint">Gera um relatório anual com os atendimentos do professor selecionado, em todas as áreas em que houver registros. Os dados são apenas consultados; nada é alterado no cadastro ou no Supabase.</p></div><div class="filters"><div class="row"><b>Novo(a)</b><input id="npNome" class="inp" style="max-width:340px" placeholder="Nome completo do professor(a)"><select id="npArea" class="inp" style="max-width:300px">${AREAS.map(a=>`<option>${a}</option>`).join('')}</select><button class="btn sm" onclick="cadastrarProf()">Cadastrar</button></div><p class="hint">A Secretaria pode adicionar, retirar e mudar professores de área a qualquer hora. Novos professores recebem uma senha temporária de 6 dígitos.</p></div>`;
   AREAS.forEach(a=>{
     const l=Object.entries(professores).filter(([i,p])=>p.area===a).sort((x,y)=>x[1].nome.localeCompare(y[1].nome));if(!l.length)return;
     h+=`<div class="sec-t">${a}</div><div class="tc"><table><thead><tr><th>Professor(a)</th><th class="no-exp">Mudar de área</th><th class="no-exp">Ambiente</th><th class="no-exp">Senha</th><th class="no-exp"></th></tr></thead><tbody>${l.map(([i,p])=>{
@@ -904,9 +905,13 @@ function rotuloCabecalho(texto){
   return String(texto).trim().split(/\s+/).map(p=>`<span class="th-word">${esc(p)}</span>`).join('');
 }
 function cabEd(classe,texto){return `<th class="${classe}">${rotuloCabecalho(texto)}</th>`}
+function nomeComponenteExibicao(valor){
+  const texto=String(valor||'').trim();
+  return normNome(texto)==='CIENCIAS DA NATUREZA'?'CIÊNCIAS':texto;
+}
 function componentesDaArea(area){
   if(area==='LINGUAGENS')return ['ARTE','EDUCAÇÃO FÍSICA','ESPANHOL','INGLÊS','REDAÇÃO','PORTUGUÊS'];
-  if(area==='CIÊNCIAS DA NATUREZA E MATEMÁTICA')return ['MATEMÁTICA','BIOLOGIA','FÍSICA','QUÍMICA','CIÊNCIAS DA NATUREZA'];
+  if(area==='CIÊNCIAS DA NATUREZA E MATEMÁTICA')return ['MATEMÁTICA','BIOLOGIA','FÍSICA','QUÍMICA','CIÊNCIAS'];
   if(area==='CIÊNCIAS HUMANAS')return ['FILOSOFIA','GEOGRAFIA','HISTÓRIA','SOCIOLOGIA'];
   return [];
 }
@@ -916,7 +921,7 @@ function indiceVivencia(area,componente,r={}){
   if(area==='CIÊNCIAS DA NATUREZA E MATEMÁTICA'){
     const c=normNome(componente||'');
     if(c.includes('MATEM'))return 5;
-    if(['BIOLOG','FISIC','QUIM','CIENCIAS DA NATUREZA'].some(x=>c.includes(x)))return 4;
+    if(['BIOLOG','FISIC','QUIM','CIENCIAS'].some(x=>c.includes(x)))return 4;
     const q=r.quantidades||{};
     if(numeroQuantidade(q[5])>0&&numeroQuantidade(q[4])===0)return 5;
     if(numeroQuantidade(q[4])>0&&numeroQuantidade(q[5])===0)return 4;
@@ -980,8 +985,9 @@ function addRow(tb,r){
   const studentCell=`<td class="col-est"><div class="student-fields">${inp('estudante').replace('<input','<input aria-label="Nome completo do estudante"')}${inp('mat').replace('<input','<input maxlength="20" inputmode="numeric" placeholder="MATRÍCULA" aria-label="Número de matrícula"')}</div></td>`;
   const date=`<td class="col-data">${S.dia}/${String(MESES.indexOf(S.mes)+1).padStart(2,'0')}/${S.ano}</td>`;
   const compOptions=componentesDaArea(S.area);
-  const compList=r.componente&&!compOptions.includes(r.componente)?[r.componente,...compOptions]:compOptions;
-  const component=areaLivre?'':`<td class="col-componente"><select class="ci" data-f="componente" onchange="alterarComponenteLinha(this)"><option value="">— selecione —</option>${compList.map(c=>`<option value="${esc(c)}" ${c===r.componente?'selected':''}>${esc(c)}</option>`).join('')}</select></td>`;
+  const componenteAtual=nomeComponenteExibicao(r.componente||'');
+  const compList=componenteAtual&&!compOptions.includes(componenteAtual)?[componenteAtual,...compOptions]:compOptions;
+  const component=areaLivre?'':`<td class="col-componente"><select class="ci" data-f="componente" onchange="alterarComponenteLinha(this)"><option value="">— selecione —</option>${compList.map(c=>`<option value="${esc(c)}" ${c===componenteAtual?'selected':''}>${esc(c)}</option>`).join('')}</select></td>`;
   const numero=(i,label)=>`<input class="ci qty-input" type="number" min="0" step="1" inputmode="numeric" placeholder="Qtd." data-f="q" data-i="${i}" value="${numeroQuantidade(qBase[i])||''}" oninput="marcarDigitacao(this)" onchange="salvarLinhaSeguro(this)" aria-label="${esc(label)}">`;
   const evaluation=areaLivre?'':`<td class="col-avaliacao"><div class="stack-fields">${numero(0,'Quantidade de avaliações')}${descricao('avaliacao',valorAvaliacaoRealizada(r),S.area==='LINGUAGENS'?'Descrição da avaliação ou redação':'Descrição da avaliação')}</div></td>`;
   const essay=(!areaLivre&&S.area==='LINGUAGENS')?`<td class="col-redacao">${numero(1,'Quantidade de redações')}</td>`:'';
@@ -1481,7 +1487,7 @@ function renderRegistrosEstudantes(){
     const c=conclusaoDoAluno(S.registroAlunoNome,S.registroAlunoMat,S.registroAlunoNivel);
     const area=(c&&c.area)||S.registroArea;
     const reg=registrosDoAlunoSelecionado();
-    return `<button class="btn sm alt registry-back" onclick="voltarRegistroEstudantes('concluintes-alunos')">← Voltar aos concluintes</button><div class="areaTag">REGISTRO DO CONCLUINTE</div>${comum}<div class="sum"><div class="t">${esc(S.registroAlunoNome)}</div><div class="d"><span>Matrícula: <strong>${esc(S.registroAlunoMat||'Não informada')}</strong></span><span>Nível: <strong>${esc(S.registroAlunoNivel||'Não informado')}</strong></span><span>Área: <strong>${esc(nomeAreaRegistro(area))}</strong></span><span>Ano de conclusão: <strong>${esc(c?c.completion_year:S.registroAnoConclusao)}</strong></span><span>Registrada em: <strong>${dataConclusao(c)}</strong></span></div></div><div class="registry-live">Os atendimentos anteriores permanecem preservados no histórico do sistema.</div><button class="btn sm warn" onclick="reabrirEstudanteConcluido()">↩ Reabrir acompanhamento</button>${reg.length?`<div class="sec-t">Registros de atendimento disponíveis no ano ${S.ano}</div><div class="tc registry-detail"><table><thead><tr><th>DATA</th><th>NÍVEL</th><th>ÁREA</th><th>COMPONENTE</th><th>AVALIAÇÃO / REDAÇÃO</th><th>PROFESSOR</th><th>EXCLUIR</th></tr></thead><tbody>${reg.map(r=>`<tr><td>${fmt(dataRegistroEstudante(r))}</td><td>${esc(nivelRegistro(r)||S.registroAlunoNivel||'—')}</td><td>${esc(nomeAreaRegistro(areaVisivelRegistro(r,area)))}</td><td>${esc(r.component||r.componente||'—')}</td><td>${esc(textoAvaliacaoRegistro(r,areaVisivelRegistro(r,area)))}</td><td>${esc(r.teacher||r.professor||'—')}</td><td>${botaoExcluirRegistroHTML(r)}</td></tr>`).join('')}</tbody></table></div>`:''}`;
+    return `<button class="btn sm alt registry-back" onclick="voltarRegistroEstudantes('concluintes-alunos')">← Voltar aos concluintes</button><div class="areaTag">REGISTRO DO CONCLUINTE</div>${comum}<div class="sum"><div class="t">${esc(S.registroAlunoNome)}</div><div class="d"><span>Matrícula: <strong>${esc(S.registroAlunoMat||'Não informada')}</strong></span><span>Nível: <strong>${esc(S.registroAlunoNivel||'Não informado')}</strong></span><span>Área: <strong>${esc(nomeAreaRegistro(area))}</strong></span><span>Ano de conclusão: <strong>${esc(c?c.completion_year:S.registroAnoConclusao)}</strong></span><span>Registrada em: <strong>${dataConclusao(c)}</strong></span></div></div><div class="registry-live">Os atendimentos anteriores permanecem preservados no histórico do sistema.</div><button class="btn sm warn" onclick="reabrirEstudanteConcluido()">↩ Reabrir acompanhamento</button>${reg.length?`<div class="sec-t">Registros de atendimento disponíveis no ano ${S.ano}</div><div class="tc registry-detail"><table><thead><tr><th>DATA</th><th>NÍVEL</th><th>ÁREA</th><th>COMPONENTE</th><th>AVALIAÇÃO / REDAÇÃO</th><th>PROFESSOR</th><th>EXCLUIR</th></tr></thead><tbody>${reg.map(r=>`<tr><td>${fmt(dataRegistroEstudante(r))}</td><td>${esc(nivelRegistro(r)||S.registroAlunoNivel||'—')}</td><td>${esc(nomeAreaRegistro(areaVisivelRegistro(r,area)))}</td><td>${esc(nomeComponenteExibicao(r.component||r.componente||'—'))}</td><td>${esc(textoAvaliacaoRegistro(r,areaVisivelRegistro(r,area)))}</td><td>${esc(r.teacher||r.professor||'—')}</td><td>${botaoExcluirRegistroHTML(r)}</td></tr>`).join('')}</tbody></table></div>`:''}`;
   }
   if(S.registroView==='alunos'){
     const area=S.registroArea,lista=montarListaAlunosRegistro(area);
@@ -1491,7 +1497,7 @@ function renderRegistrosEstudantes(){
   const linhas=registros.map(r=>{
     const area=areaVisivelRegistro(r,S.registroArea);
     const excluir=botaoExcluirRegistroHTML(r);
-    return `<tr><td>${fmt(dataRegistroEstudante(r))}</td><td>${esc(nivelRegistro(r)||S.registroAlunoNivel||'—')}</td><td>${esc(nomeAreaRegistro(area))}</td><td>${esc(r.component||r.componente||'—')}</td><td>${esc(textoAvaliacaoRegistro(r,area))}</td><td>${esc(r.teacher||r.professor||'—')}</td><td>${excluir}</td></tr>`;
+    return `<tr><td>${fmt(dataRegistroEstudante(r))}</td><td>${esc(nivelRegistro(r)||S.registroAlunoNivel||'—')}</td><td>${esc(nomeAreaRegistro(area))}</td><td>${esc(nomeComponenteExibicao(r.component||r.componente||'—'))}</td><td>${esc(textoAvaliacaoRegistro(r,area))}</td><td>${esc(r.teacher||r.professor||'—')}</td><td>${excluir}</td></tr>`;
   }).join('');
   return `<button class="btn sm alt registry-back" onclick="voltarRegistroEstudantes('alunos')">← Voltar aos estudantes</button><div class="areaTag">REGISTRO DO ESTUDANTE</div>${comum}<div class="sum"><div class="t">${esc(S.registroAlunoNome)}</div><div class="d"><span>Matrícula: <strong>${esc(S.registroAlunoMat||'Não informada')}</strong></span><span>Nível: <strong>${esc(S.registroAlunoNivel||'Não informado')}</strong></span><span>Área atual: <strong>${esc(nomeAreaRegistro(S.registroArea))}</strong></span></div></div><div id="registroAreaStatus" class="registry-live">A área é definida automaticamente pelo componente da avaliação mais recente. O histórico individual reúne as avaliações e redações registradas por todos os professores, inclusive de outras áreas.</div><button class="btn sm warn registry-conclude" onclick="concluirEstudanteRegistro()">✓ CONCLUSÃO</button><span id="conclusaoStatus" class="registry-live"></span><div class="tc registry-detail"><table><thead><tr><th>DATA</th><th>NÍVEL</th><th>ÁREA</th><th>COMPONENTE</th><th>AVALIAÇÃO / REDAÇÃO</th><th>PROFESSOR</th><th>EXCLUIR</th></tr></thead><tbody>${linhas||'<tr><td colspan="7" class="nd">Nenhuma avaliação ou redação disponível para este estudante.</td></tr>'}</tbody></table></div>`;
 }
@@ -1534,6 +1540,100 @@ async function exportarBackupSupabase(){
     document.body.appendChild(a);a.click();a.remove();URL.revokeObjectURL(url);
     alert('Backup Supabase exportado. Guarde o arquivo em local seguro.');
   }catch(e){console.error('Falha ao exportar backup Supabase:',e);alert('Não foi possível exportar o backup: '+String(e.message||e));}
+}
+
+/* ---------- RELATÓRIO ANUAL DE ATENDIMENTOS POR PROFESSOR ---------- */
+function nomeAreaRelatorioAnual(chave){
+  const entrada=AREAS.find(a=>akey(a)===String(chave||''));
+  return entrada||'ÁREA NÃO IDENTIFICADA';
+}
+function achatarAnoParaRelatorio(dados,legados){
+  const lista=[];
+  Object.entries(dados||{}).forEach(([mes,md])=>Object.entries(md||{}).forEach(([dia,dd])=>Object.entries(dd||{}).forEach(([ak,ad])=>Object.entries(ad||{}).forEach(([pid,pd])=>Object.entries(pd||{}).forEach(([key,r])=>{
+    if(r&&(r.estudante||'').trim())lista.push({...r,mes,dia,ak,pid,key,src:'N'});
+  })))));
+  Object.entries(legados||{}).forEach(([mes,md])=>Object.entries(md||{}).forEach(([dia,dd])=>Object.entries(dd||{}).forEach(([ak,ad])=>Object.entries(ad||{}).forEach(([key,r])=>{
+    if(r&&(r.estudante||'').trim())lista.push({...r,mes,dia,ak,pid:'',key,src:'L',professor:r.professor||''});
+  }))));
+  return lista;
+}
+function dataRelatorioAnual(r,ano){
+  const mi=MESES.indexOf(String(r.mes||'').toUpperCase()),dia=Number(r.dia)||0;
+  if(mi<0||dia<1)return `${String(r.dia||'—').padStart(2,'0')}/${String(mi+1).padStart(2,'0')}/${ano}`;
+  return `${String(dia).padStart(2,'0')}/${String(mi+1).padStart(2,'0')}/${ano}`;
+}
+function quantidadeRelatorioAnual(r,i){
+  let q=quantidadeTipo(r,i);
+  if(q===0&&i===0&&String(r.avaliacaoRealizada||r.avaliacao||r.evaluation||'').trim())q=1;
+  if(q===0&&i===1&&String(r.redacao||r.essay||r.redaction||'').trim())q=1;
+  return q;
+}
+function atividadesRelatorioAnual(r){
+  const area=nomeAreaRelatorioAnual(r.ak),partes=[],soma={};
+  TIPOS.forEach((tipo,i)=>{const q=quantidadeRelatorioAnual(r,i);if(q>0){const rotulo=TIPOS_PL[i];soma[rotulo]=(soma[rotulo]||0)+q;}});
+  Object.entries(soma).forEach(([rotulo,q])=>partes.push(`${rotulo}: ${q}`));
+  if(livre(area)){
+    const q=quantidadeLivre(r);
+    if(q>0)partes.push(`${r.forma||r.atendimento||'Atividade'}: ${q}`);
+  }
+  if(!partes.length&&Number(r.atendimentos)>0)partes.push(`Atendimentos: ${numeroQuantidade(r.atendimentos)}`);
+  if(!partes.length&&r.frequencia)partes.push('Presença registrada');
+  return partes.join(' · ')||'—';
+}
+function descricaoRelatorioAnual(r){
+  const itens=[
+    r.avaliacaoRealizada||r.avaliacao||r.evaluation,
+    r.redacao||r.essay||r.redaction,
+    r.intervencaoDescricao||r.intervencao_descricao,
+    r.atividadeVivenciaDescricao||r.atividade_vivencia_descricao,
+    r.registroAtividadeDescricao||r.registro_atividade_descricao||r.atividadeLivreDescricao,
+    r.forma&&livre(nomeAreaRelatorioAnual(r.ak))?r.forma:''
+  ].map(x=>String(x||'').trim()).filter(Boolean);
+  return [...new Set(itens)].join(' — ')||'—';
+}
+function quantidadeResumoAnual(rs,i){return rs.reduce((s,r)=>s+quantidadeRelatorioAnual(r,i),0)}
+async function exportarAtendimentosAnuaisProfessor(){
+  if(!AUTH.token||!AUTH.identity||AUTH.identity.role!=='sec')return alert('Somente a Secretaria pode exportar o relatório anual dos professores.');
+  const seletor=$('relatorioProfAnual'),anoSeletor=$('relatorioAnoAnual');
+  const id=seletor&&seletor.value,ano=String(anoSeletor&&anoSeletor.value||'');
+  const professor=professores[id];
+  if(!id||!professor)return alert('Selecione um professor(a) para gerar o relatório.');
+  if(!/^\d{4}$/.test(ano)||Number(ano)<2026||Number(ano)>2049)return alert('Selecione um ano válido.');
+  try{
+    // Duas leituras somente: nenhum registro do banco é alterado por esta exportação.
+    const [snapAtual,snapLegado]=await Promise.all([
+      db.ref(`atend/${ano}`).once('value'),
+      db.ref(`frequencias/${ano}`).once('value')
+    ]);
+    const todos=achatarAnoParaRelatorio(snapAtual.val()||{},snapLegado.val()||{});
+    const nomeNorm=normNome(professor.nome);
+    const registros=todos.filter(r=>String(r.pid||'')===String(id)||String(r.profId||r.prof_id||'')===String(id)||normNome(r.professor||r.teacher||'')===nomeNorm)
+      .sort((a,b)=>MESES.indexOf(String(a.mes||'').toUpperCase())-MESES.indexOf(String(b.mes||'').toUpperCase())||Number(a.dia||0)-Number(b.dia||0)||Number(a.ts||0)-Number(b.ts||0));
+    if(!registros.length)return alert(`Não há atendimentos de ${professor.nome} registrados em ${ano}.`);
+
+    const areas={};
+    registros.forEach(r=>{
+      const area=nomeAreaRelatorioAnual(r.ak),o=areas[area]||(areas[area]={registros:0,avaliacoes:0,redacoes:0,presencas:0});
+      o.registros++;
+      o.avaliacoes+=quantidadeRelatorioAnual(r,0);
+      o.redacoes+=quantidadeRelatorioAnual(r,1);
+      if(r.frequencia||TIPOS.some((t,i)=>quantidadeRelatorioAnual(r,i)>0)||String(r.avaliacaoRealizada||r.avaliacao||r.evaluation||'').trim())o.presencas++;
+    });
+    const totais={registros:registros.length,avaliacoes:quantidadeResumoAnual(registros,0),redacoes:quantidadeResumoAnual(registros,1),presencas:registros.filter(r=>r.frequencia||TIPOS.some((t,i)=>quantidadeRelatorioAnual(r,i)>0)||String(r.avaliacaoRealizada||r.avaliacao||r.evaluation||'').trim()).length};
+    const resumoAreas=Object.entries(areas).sort((a,b)=>a[0].localeCompare(b[0])).map(([area,o])=>`<tr><td class="l">${esc(area)}</td><td>${o.registros}</td><td>${o.avaliacoes}</td><td>${o.redacoes}</td><td>${o.presencas}</td></tr>`).join('');
+    const linhas=registros.map(r=>`<tr><td>${esc(String(r.mes||'').toUpperCase())}</td><td>${esc(dataRelatorioAnual(r,ano))}</td><td>${esc(nomeAreaRelatorioAnual(r.ak))}</td><td class="l">${esc(r.estudante||'—')}</td><td>${esc(r.mat||'—')}</td><td>${esc(normalizarNivel(r.nivel)||'—')}</td><td>${esc(nomeComponenteExibicao(r.componente||'—'))}</td><td class="l">${esc(descricaoRelatorioAnual(r))}</td><td class="l">${esc(atividadesRelatorioAnual(r))}</td><td>${r.frequencia?'Sim':'—'}</td></tr>`).join('');
+    const subtitulo=`${professor.nome} — Ano letivo ${ano}`;
+    const css=`body{font-family:Georgia,'Times New Roman',serif;color:#111;font-size:9pt}h1{font-size:16pt;color:#0b5736;margin:0}h2{font-size:12pt;margin:4px 0 10px;font-weight:normal}h3{font-size:10pt;color:#0b5736;margin:14px 0 5px}.cab{min-height:62px}.cab img{height:55px;float:left;margin:0 12px 8px 0}.info{border:1px solid #0b5736;padding:7px;margin:8px 0}.totais{display:flex;flex-wrap:wrap;gap:7px;margin:7px 0}.total{border:1px solid #8caa98;padding:6px 9px;font-weight:bold}table{border-collapse:collapse;width:100%;font-size:8pt;margin:6px 0 14px;table-layout:auto}thead{display:table-header-group}tr{break-inside:avoid;page-break-inside:avoid}th{background:#0b5736;color:white;border:1px solid #084229;padding:5px;-webkit-print-color-adjust:exact;print-color-adjust:exact}td{border:1px solid #9ca3af;padding:4px;vertical-align:top;text-align:center;overflow-wrap:anywhere}td.l{text-align:left}.nota{font-size:8pt;color:#475569;margin-top:12px}@page{size:landscape;margin:10mm}`;
+    const html=`<!DOCTYPE html><html lang="pt-BR"><head><meta charset="utf-8"><title>${esc('Relatório anual de atendimentos — '+subtitulo)}</title><style>${css}</style></head><body><div class="cab"><img src="${LOGO}" alt="Brasão CEJA"><h1>CEJA DR. GERARDO CAMELO MADEIRA</h1><h2>RELATÓRIO ANUAL DE ATENDIMENTOS POR PROFESSOR(A)</h2><div style="clear:both"></div></div><div class="info"><strong>Professor(a):</strong> ${esc(professor.nome)} &nbsp; | &nbsp; <strong>Área de cadastro:</strong> ${esc(professor.area||'—')} &nbsp; | &nbsp; <strong>Ano letivo:</strong> ${esc(ano)}</div><div class="totais"><div class="total">Registros: ${totais.registros}</div><div class="total">Avaliações: ${totais.avaliacoes}</div><div class="total">Redações: ${totais.redacoes}</div><div class="total">Atendimentos com presença/atividade: ${totais.presencas}</div></div><h3>Resumo por área de conhecimento</h3><table><thead><tr><th>ÁREA</th><th>REGISTROS</th><th>AVALIAÇÕES</th><th>REDAÇÕES</th><th>COM PRESENÇA/ATIVIDADE</th></tr></thead><tbody>${resumoAreas}</tbody></table><h3>Relação anual dos atendimentos</h3><table><thead><tr><th>MÊS</th><th>DATA</th><th>ÁREA</th><th>ESTUDANTE</th><th>MATRÍCULA</th><th>NÍVEL</th><th>COMPONENTE CURRICULAR</th><th>AVALIAÇÃO / DESCRIÇÃO</th><th>ATIVIDADES / QUANTIDADES</th><th>PRESENÇA</th></tr></thead><tbody>${linhas}</tbody></table><p class="nota">Relatório gerado a partir dos registros existentes no Supabase. Esta exportação não altera nem exclui os dados cadastrados.</p></body></html>`;
+    const fr=document.createElement('iframe');
+    fr.style.cssText='position:fixed;right:0;bottom:0;width:0;height:0;border:0';
+    document.body.appendChild(fr);
+    fr.contentDocument.open();fr.contentDocument.write(html);fr.contentDocument.close();
+    setTimeout(()=>{try{fr.contentWindow.focus();fr.contentWindow.print()}catch(e){console.error('Falha ao abrir impressão do relatório anual:',e);alert('Não foi possível abrir a janela de impressão do PDF.')}setTimeout(()=>fr.remove(),60000)},500);
+  }catch(e){
+    console.error('Falha ao consultar relatório anual do professor:',e);
+    alert('Não foi possível gerar o relatório anual: '+String(e.message||e));
+  }
 }
 
 /* ---------- EXPORTAR PDF / WORD ---------- */
